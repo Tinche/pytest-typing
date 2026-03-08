@@ -1,0 +1,115 @@
+---
+name: CI
+
+permissions: {}
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: "Python ${{ matrix.python-version }}"
+    runs-on: "ubuntu-latest"
+
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        with:
+          persist-credentials: false
+
+      - uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff  # v3.0.0
+      - uses: hynek/setup-cached-uv@757bedc3f972eb7227a1aa657651f15a8527c817  # v2.3.0
+
+      - name: "Run Tests"
+        run: |
+          just python=${{ format('python{0}', matrix.python-version) }} covcleanup="false" cov
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
+        with:
+          name: coverage-data-${{ matrix.python-version }}
+          path: .coverage.*
+          if-no-files-found: ignore
+          include-hidden-files: true
+
+  coverage:
+    name: "Combine & check coverage."
+    needs: "tests"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download coverage data
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        with:
+          pattern: coverage-data-*
+          merge-multiple: true
+
+      - uses: hynek/setup-cached-uv@757bedc3f972eb7227a1aa657651f15a8527c817  # v2.3.0
+
+      - name: "Combine coverage"
+        run: |
+          uv run --group test coverage combine
+          uv run --group test coverage html
+          uv run --group test coverage json
+
+          # Report and write to summary.
+          uv run --group test coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+
+          export TOTAL=$(uv run python -c "import json;print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
+          echo "total=$TOTAL" >> $GITHUB_ENV
+
+          # Report again and fail if under the threshold.
+          uv run --group test coverage report --fail-under=100
+
+      - name: "Upload HTML report."
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
+        with:
+          name: "html-report"
+          path: "htmlcov"
+        if: always()
+
+  lint:
+    name: "Run linters"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        with:
+          persist-credentials: false
+
+      - uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff  # v3.0.0
+      - uses: hynek/setup-cached-uv@757bedc3f972eb7227a1aa657651f15a8527c817  # v2.3.0
+
+      - name: "Run linters"
+        run: |
+          just lint
+
+  package:
+    name: "Build & verify package"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        with:
+          persist-credentials: false
+
+      - uses: hynek/setup-cached-uv@757bedc3f972eb7227a1aa657651f15a8527c817
+
+      - name: "Build package"
+        run: "uv build"
+      - name: "List result"
+        run: "ls -l dist"
+      - name: "Check wheel contents"
+        run: "uvx check-wheel-contents --toplevel pytest_typing dist/*.whl"
+      - name: "Check long_description"
+        run: "uvx twine check dist/*"
