@@ -41,7 +41,7 @@ class Diagnostic:
     file: str
     line: int
     col: int
-    severity: str  # "error" | "warning"
+    severity: Literal["error", "warning", "info"]
     rule: str  # e.g. "invalid-assignment"
     message: str
 
@@ -95,12 +95,15 @@ def _parse_ty_output(output: str) -> list[Diagnostic]:
         line = raw_line.strip()
         m = _CONCISE_RE.match(line)
         if m:
+            severity = m.group("severity")
+            if severity not in ("error", "warning", "info"):
+                raise ValueError(severity)
             diagnostics.append(
                 Diagnostic(
                     file=m.group("file"),
                     line=int(m.group("line")),
                     col=int(m.group("col")),
-                    severity=m.group("severity"),
+                    severity=severity,  # type: ignore
                     rule=m.group("rule"),
                     message=m.group("message"),
                 )
@@ -173,12 +176,15 @@ def _parse_mypy_output(output: str) -> list[Diagnostic]:
                 rule = "revealed-type"
                 severity = "info"
 
+            if severity not in ("error", "warning", "info"):
+                raise ValueError(severity)
+
             diagnostics.append(
                 Diagnostic(
                     file=m.group("file"),
                     line=int(m.group("line")),
                     col=1,  # mypy doesn't provide column in default output
-                    severity=severity,
+                    severity=severity,  # type: ignore
                     rule=rule,
                     message=message,
                 )
@@ -280,7 +286,7 @@ class TypeAssertion:
     """
 
     line_number: int  # the *code* line the assertion applies to
-    kind: str  # "error" | "revealed"
+    kind: Literal["error", "revealed"]
     checker: Checker | None  # None = universal, "ty" / "mypy" / … = specific
     rule: str | None
     message: str | None
@@ -345,12 +351,15 @@ def parse_assertions(source: str) -> list[TypeAssertion]:
         if is_comment_only and (diag_matches or revealed_matches):
             # This is a preceding-line assertion — don't anchor yet.
             for diag_match in diag_matches:
+                severity = str(diag_match.group("severity"))
+                if severity not in ("error", "revealed"):
+                    raise ValueError(severity)
                 pending.append(
                     (
                         "diag",
                         TypeAssertion(
                             line_number=-1,  # will be set when anchored
-                            kind=diag_match.group("severity"),
+                            kind=severity,  # type: ignore
                             checker=_checker_or_none(
                                 diag_match.group("checker") or None
                             ),
@@ -384,10 +393,13 @@ def parse_assertions(source: str) -> list[TypeAssertion]:
 
         # Also check for inline assertions on this code line.
         for diag_match in diag_matches:
+            severity = str(diag_match.group("severity"))
+            if severity not in ("error", "revealed"):
+                raise ValueError(severity)
             assertions.append(
                 TypeAssertion(
                     line_number=lineno,
-                    kind=diag_match.group("severity"),
+                    kind=severity,  # type: ignore
                     checker=_checker_or_none(diag_match.group("checker") or None),
                     rule=diag_match.group("rule"),
                     message=diag_match.group("message"),
@@ -565,8 +577,6 @@ def match_diagnostics(
                 assertion.matched = True
                 used_diags.add(idx)
                 break
-            if diag.severity != assertion.kind:
-                continue
             if assertion.rule and diag.rule != assertion.rule:
                 continue
             if assertion.message and assertion.message not in diag.message:
