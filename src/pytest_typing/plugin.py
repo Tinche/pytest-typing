@@ -108,13 +108,6 @@ def _parse_ty_output(output: str) -> list[Diagnostic]:
     return diagnostics
 
 
-def _opt(config: pytest.Config, cli_name: str, ini_name: str) -> Any:
-    val = config.getoption(cli_name, default=None)
-    if val is None or val is False:
-        val = config.getini(ini_name)
-    return val
-
-
 class TyChecker(TypeChecker):
     name = "ty"
 
