@@ -66,7 +66,8 @@ def test_internal_error(
 ) -> None:
     """Internal errors running ty should be recognized."""
     pytester.maketoml("""
-    checkers = ["mypy"]
+    [pytest]
+    typing_checkers = ["mypy"]
     """)
     pytester.makefile(".md", test_typing_basics="# Test\n\n```py\nx = 1\n```\n")
 
