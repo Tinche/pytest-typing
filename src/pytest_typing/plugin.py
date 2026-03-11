@@ -96,7 +96,7 @@ def _parse_ty_output(output: str) -> list[Diagnostic]:
         m = _CONCISE_RE.match(line)
         if m:
             severity = m.group("severity")
-            if severity not in ("error", "warning", "info"):
+            if severity not in ("error", "warning", "info"):  # pragma: no cover
                 raise ValueError(severity)
             diagnostics.append(
                 Diagnostic(
@@ -176,7 +176,7 @@ def _parse_mypy_output(output: str) -> list[Diagnostic]:
                 rule = "revealed-type"
                 severity = "info"
 
-            if severity not in ("error", "warning", "info"):
+            if severity not in ("error", "warning", "info"):  # pragma: no cover
                 raise ValueError(severity)
 
             diagnostics.append(
