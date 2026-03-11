@@ -203,10 +203,11 @@ class MypyChecker(TypeChecker):
         ]
 
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=project_dir)  # noqa: S603
-        diagnostics = _parse_mypy_output(result.stdout)
-        if not diagnostics and result.returncode not in (0, 1):
-            diagnostics = _parse_mypy_output(result.stderr)
-        return diagnostics
+        # Mypy error codes: https://github.com/python/mypy/issues/6003
+        if result.returncode not in (0, 1):
+            # Internal error or misconfiguration
+            raise InternalCheckerError(result.stderr, "mypy")
+        return _parse_mypy_output(result.stdout)
 
     def extract_revealed_type(self, message: str) -> str:
         """Extract the type from a mypy revealed-type diagnostic message.
