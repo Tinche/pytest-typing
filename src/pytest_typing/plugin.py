@@ -391,13 +391,10 @@ def parse_assertions(source: str) -> list[TypeAssertion]:
 
         # Also check for inline assertions on this code line.
         for diag_match in diag_matches:
-            kind = str(diag_match.group("severity"))
-            if kind not in ("error", "revealed"):
-                raise ValueError(kind)
             assertions.append(
                 TypeAssertion(
                     line_number=lineno,
-                    kind=kind,  # type: ignore
+                    kind="error",
                     checker=_checker_or_none(diag_match.group("checker") or None),
                     rule=diag_match.group("rule"),
                     message=diag_match.group("message"),
