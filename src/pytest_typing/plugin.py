@@ -351,15 +351,13 @@ def parse_assertions(source: str) -> list[TypeAssertion]:
         if is_comment_only and (diag_matches or revealed_matches):
             # This is a preceding-line assertion — don't anchor yet.
             for diag_match in diag_matches:
-                severity = str(diag_match.group("severity"))
-                if severity not in ("error", "revealed"):
-                    raise ValueError(severity)
+                diag_kind: Literal["error"] = str(diag_match.group("severity"))  # type: ignore
                 pending.append(
                     (
                         "diag",
                         TypeAssertion(
                             line_number=-1,  # will be set when anchored
-                            kind=severity,  # type: ignore
+                            kind=diag_kind,
                             checker=_checker_or_none(
                                 diag_match.group("checker") or None
                             ),
@@ -393,13 +391,13 @@ def parse_assertions(source: str) -> list[TypeAssertion]:
 
         # Also check for inline assertions on this code line.
         for diag_match in diag_matches:
-            severity = str(diag_match.group("severity"))
-            if severity not in ("error", "revealed"):
-                raise ValueError(severity)
+            kind = str(diag_match.group("severity"))
+            if kind not in ("error", "revealed"):
+                raise ValueError(kind)
             assertions.append(
                 TypeAssertion(
                     line_number=lineno,
-                    kind=severity,  # type: ignore
+                    kind=kind,  # type: ignore
                     checker=_checker_or_none(diag_match.group("checker") or None),
                     rule=diag_match.group("rule"),
                     message=diag_match.group("message"),
