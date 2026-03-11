@@ -641,3 +641,29 @@ class TestIntegration:
         result = pytester.runpytest("-v")
         # Should show the mismatched reveal with expected vs actual
         result.stdout.fnmatch_lines(["*`str` (expected) vs*"])
+
+    def test_diagnostics_used_only_once(self, pytester: pytest.Pytester) -> None:
+        """Diagnostic messages are matched to only one assertion."""
+        pytester.makefile(
+            ".md",
+            test_typing_reveal_multiple=textwrap.dedent("""\
+                # Multiple reveals
+
+                ```py
+                from typing_extensions import reveal_type
+
+                x = 1
+                # revealed: Literal[1]
+                reveal_type(x)
+                reveal_type(x)
+                ```
+            """),
+        )
+        result = pytester.runpytest_inprocess("-v")
+        assert result.ret == 1
+        result.stdout.fnmatch_lines(
+            [
+                " Unexpected diagnostics:",
+                " line 6: info[revealed-type]: Revealed type: `Literal[1]`",
+            ]
+        )

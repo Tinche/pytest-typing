@@ -532,12 +532,15 @@ def match_diagnostics(
     other checkers are silently skipped.
     """
     # Filter to assertions relevant to this checker.
-    active = [a for a in assertions if a.checker is None or a.checker == checker.name]
+    assertions = [
+        a for a in assertions if a.checker is None or a.checker == checker.name
+    ]
 
+    # We match a diagnostic to an assertion only once.
     used_diags: set[int] = set()
     mismatched_reveals: list[MismatchedReveal] = []
 
-    for assertion in active:
+    for assertion in assertions:
         for idx, diag in enumerate(diagnostics):
             if idx in used_diags:
                 continue
@@ -573,14 +576,14 @@ def match_diagnostics(
             break
 
     # Suppress ``undefined-reveal`` on lines with a ``# revealed:`` assertion.
-    revealed_lines = {a.line_number for a in active if a.kind == "revealed"}
+    revealed_lines = {a.line_number for a in assertions if a.kind == "revealed"}
     for idx, diag in enumerate(diagnostics):
         if idx in used_diags:
             continue
         if diag.rule == "undefined-reveal" and diag.line in revealed_lines:
             used_diags.add(idx)
 
-    unmatched = [a for a in active if not a.matched]
+    unmatched = [a for a in assertions if not a.matched]
     unexpected = [d for i, d in enumerate(diagnostics) if i not in used_diags]
     return MatchResult(
         unmatched_assertions=unmatched,
