@@ -654,16 +654,19 @@ class TestIntegration:
 
                 x = 1
                 # revealed: Literal[1]
+                # revealed: Literal[1]
+                reveal_type(x)
                 reveal_type(x)
                 reveal_type(x)
                 ```
             """),
         )
-        result = pytester.runpytest_inprocess("-v")
+        result = pytester.runpytest_inprocess()
         assert result.ret == 1
         result.stdout.fnmatch_lines(
             [
                 " Unexpected diagnostics:",
-                " line 6: info[revealed-type]: Revealed type: `Literal[1]`",
+                " line 7: info[revealed-type]: Revealed type: `Literal[1]`",
+                " line 8: info[revealed-type]: Revealed type: `Literal[1]`",
             ]
         )
