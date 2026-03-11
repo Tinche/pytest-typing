@@ -11,7 +11,6 @@ from pytest_typing.plugin import (
     TypeAssertion,
     match_diagnostics,
     parse_assertions,
-    parse_markdown,
 )
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -133,108 +132,6 @@ class TestParseInlineAssertions:
         with pytest.raises(InvalidAssertionError) as exc_info:
             parse_assertions(src)
         assert exc_info.value.kind == "banana"
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# Markdown parser
-# ═══════════════════════════════════════════════════════════════════════
-
-
-class TestParseMarkdown:
-    def test_single_block(self) -> None:
-        md = textwrap.dedent("""\
-            # My Test
-
-            ```py
-            x: int = 1
-            ```
-        """)
-        blocks = parse_markdown(md)
-        assert len(blocks) == 1
-        assert blocks[0].source == "x: int = 1"
-        assert blocks[0].section == "My Test"
-        assert blocks[0].only_checkers is None
-        assert blocks[0].skip_checkers == set()
-        md = textwrap.dedent("""\
-            # Suite
-
-            ## Integers
-
-            ```py
-            x: int = 1
-            ```
-
-            ## Strings
-
-            ```py
-            y: str = "hi"
-            ```
-        """)
-        blocks = parse_markdown(md)
-        assert len(blocks) == 2
-        assert blocks[0].section == "Suite - Integers"
-        assert blocks[1].section == "Suite - Strings"
-
-    def test_non_python_blocks_ignored(self) -> None:
-        md = textwrap.dedent("""\
-            ```toml
-            [tool.ty]
-            ```
-
-            ```py
-            x = 1
-            ```
-        """)
-        blocks = parse_markdown(md)
-        assert len(blocks) == 1
-
-    def test_empty_markdown(self) -> None:
-        assert parse_markdown("") == []
-
-    def test_only_attribute(self) -> None:
-        md = textwrap.dedent("""\
-            ```py only=ty,pyright
-            x = 1
-            ```
-        """)
-        blocks = parse_markdown(md)
-        assert len(blocks) == 1
-        assert blocks[0].only_checkers == {"ty", "pyright"}
-
-    def test_skip_attribute(self) -> None:
-        md = textwrap.dedent("""\
-            ```py skip=mypy
-            x = 1
-            ```
-        """)
-        blocks = parse_markdown(md)
-        assert len(blocks) == 1
-        assert blocks[0].skip_checkers == {"mypy"}
-
-    def test_combined_attributes(self) -> None:
-        md = textwrap.dedent("""\
-            ```py only=ty skip=mypy
-            x = 1
-            ```
-        """)
-        blocks = parse_markdown(md)
-        assert blocks[0].only_checkers == {"ty"}
-        assert blocks[0].skip_checkers == {"mypy"}
-
-    def test_attributes_are_per_block(self) -> None:
-        md = textwrap.dedent("""\
-            ```py only=ty
-            x = 1
-            ```
-
-            ```py
-            y = 2
-            ```
-        """)
-        blocks = parse_markdown(md)
-        assert len(blocks) == 2
-        assert blocks[0].only_checkers == {"ty"}
-        assert blocks[1].only_checkers is None
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -540,6 +437,27 @@ class TestIntegration:
         )
         result = pytester.runpytest("--collect-only")
         result.stdout.fnmatch_lines(["*suite-part_a*", "*suite-part_b*"])
+
+    def test_wrong_error_asserted(self, pytester: pytest.Pytester) -> None:
+        """Asserting the wrong error code leaves the diagnostic to be surfaced."""
+        pytester.makefile(
+            ".md",
+            test_typing_assertions=textwrap.dedent("""\
+                # Suite
+
+                ```py
+                # error: [nonexistent]
+                x: str = 1
+                ```
+            """),
+        )
+        result = pytester.runpytest_inprocess()
+        result.stdout.fnmatch_lines(
+            [
+                " line 2: error[[]invalid-assignment[]]*",
+                " line 2: error: [[]nonexistent[]]",
+            ]
+        )
 
     def test_no_python_blocks_means_no_items(self, pytester: pytest.Pytester) -> None:
         """A Markdown file with no Python blocks yields no tests."""

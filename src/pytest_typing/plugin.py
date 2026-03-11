@@ -419,7 +419,7 @@ def parse_assertions(source: str) -> list[TypeAssertion]:
 # ───────────────────────────────────────────────────────────────────────
 
 
-@dataclass
+@dataclass(slots=True)
 class MdCodeBlock:
     source: str
     start_line: int
@@ -428,12 +428,12 @@ class MdCodeBlock:
     skip_checkers: set[str]  # empty = skip none
 
 
-_FENCE_OPEN_RE = re.compile(
+_FENCE_OPEN_RE: Final = re.compile(
     r"^```(?:py|python)"
     r"(?P<attrs>(?:\s+\w+=\S+)*)"
     r"\s*$"
 )
-_FENCE_CLOSE_RE = re.compile(r"^```\s*$")
+_FENCE_CLOSE_RE: Final = re.compile(r"^```\s*$")
 _HEADING_RE = re.compile(r"^(?P<hashes>#{1,6})\s+(?P<title>.+)$")
 _ATTR_RE = re.compile(r"(?P<key>\w+)=(?P<value>\S+)")
 
@@ -572,7 +572,7 @@ def match_diagnostics(
                 assertion.matched = True
                 used_diags.add(idx)
                 break
-            if assertion.rule and diag.rule != assertion.rule:
+            if assertion.rule is not None and diag.rule != assertion.rule:
                 continue
             if assertion.message and assertion.message not in diag.message:
                 continue

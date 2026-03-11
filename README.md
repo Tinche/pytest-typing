@@ -38,7 +38,7 @@ Finally, start writing Markdown files in your test directory (`tests/` by defaul
 The files need to be named `test_typing_*.md` in order to be collected.
 
 Inside the Markdown file, use Markdown headings (`#`, `##`, etc.) to separate tests.
-Inside each heading, write fenced Python blocks with code that will be type-checked.
+Inside each heading, write fenced Python code blocks (`python` or `py`) with code that will be type-checked.
 
 This is what an example file might look like, defining two tests:
 
@@ -59,6 +59,14 @@ This test demonstrates how errors can be checked.
 
 ```python
 a: str = 1  # error: [invalid-assignment]
+```
+
+## This test shows type reveals
+
+`reveal_type` statements can be matched against.
+
+```python
+reveal_type(1)  # revealed: Literal[1]
 ```
 
 ````
