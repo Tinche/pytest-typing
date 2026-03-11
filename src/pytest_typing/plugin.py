@@ -129,10 +129,12 @@ class TyChecker(TypeChecker):
         cmd.append(str(file_path))
 
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=project_dir)  # noqa: S603
-        diagnostics = _parse_ty_output(result.stdout)
-        if not diagnostics and result.returncode not in (0, 1):
-            diagnostics = _parse_ty_output(result.stderr)
-        return diagnostics
+        # Docs on ty status codes: https://docs.astral.sh/ty/reference/exit-codes/
+        if result.returncode not in (0, 1):
+            # Internal error or misconfiguration
+            raise InternalCheckerError(result.stderr, "ty")
+
+        return _parse_ty_output(result.stdout)
 
     def extract_revealed_type(self, message: str) -> str:
         """Extract the type from a ty revealed-type diagnostic message.
@@ -804,11 +806,19 @@ class MdTestError(Exception):
         md_file: str,
         md_line: int,
         section: str,
-        checker_name: str,
+        checker_name: Checker,
     ) -> None:
         super().__init__("type checker assertion mismatch")
         self.match_result = match_result
         self.md_file = md_file
         self.md_line = md_line
         self.section = section
+        self.checker_name = checker_name
+
+
+class InternalCheckerError(Exception):
+    """Raised when a type checker encounters an internal error or misconfiguration."""
+
+    def __init__(self, message: str, checker_name: Checker) -> None:
+        super().__init__(message)
         self.checker_name = checker_name

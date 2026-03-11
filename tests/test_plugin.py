@@ -14,9 +14,6 @@ from pytest_typing.plugin import (
     parse_markdown,
 )
 
-pytest_plugins = ["pytester"]
-
-
 # ═══════════════════════════════════════════════════════════════════════
 # Inline assertion parser
 # ═══════════════════════════════════════════════════════════════════════

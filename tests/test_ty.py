@@ -1,7 +1,10 @@
 """Tests for ty."""
 
+import subprocess
 import textwrap
 from typing import Final
+
+import pytest
 
 from pytest_typing.plugin import CHECKERS, Diagnostic, _parse_ty_output
 
@@ -52,6 +55,30 @@ def test_non_diagnostic_lines_ignored() -> None:
         """)
     diags = _parse_ty_output(output)
     assert len(diags) == 1
+
+
+def test_internal_error(
+    pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Internal errors running ty should be recognized."""
+    pytester.maketoml("""
+    checkers = ["ty"]
+    """)
+    pytester.makefile(".md", test_typing_basics="# Test\n\n```py\nx = 1\n```\n")
+
+    # We monkeypatch `subprocess.run` to pretend ty exits with `2`
+    orig_run = subprocess.run
+
+    def monkeypatched_run(*args, **kwargs):
+        res = orig_run(*args, **kwargs)
+        res.returncode = 2
+        return res
+
+    monkeypatch.setattr(subprocess, "run", monkeypatched_run)
+    res = pytester.runpytest_inprocess()
+
+    # Pytest failure
+    assert res.ret == 1
 
 
 def test_simple_type() -> None:
