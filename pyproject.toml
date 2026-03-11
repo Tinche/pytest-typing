@@ -62,6 +62,9 @@ exclude_also = [
 [tool.ruff]
 src = ["src", "tests"]
 
+[tool.ruff.format]
+skip-magic-trailing-comma = true
+
 [tool.ruff.lint]
 select = [
     "E",   # pycodestyle
@@ -97,6 +100,9 @@ ignore = [
     "DTZ001", # datetimes in tests
     "DTZ006", # datetimes in tests
 ]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
 
 [tool.hatch.version]
 source = "vcs"

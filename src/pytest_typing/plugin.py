@@ -239,10 +239,7 @@ class MypyChecker(TypeChecker):
 
 # ── Registry ─────────────────────────────────────────────────────────
 
-CHECKERS: dict[Checker, TypeChecker] = {
-    "ty": TyChecker(),
-    "mypy": MypyChecker(),
-}
+CHECKERS: dict[Checker, TypeChecker] = {"ty": TyChecker(), "mypy": MypyChecker()}
 
 
 # ───────────────────────────────────────────────────────────────────────
@@ -342,9 +339,7 @@ def parse_assertions(source: str) -> list[TypeAssertion]:
             # Only "error" is valid for bracket-style assertions
             if kind != "error":
                 raise InvalidAssertionError(
-                    line_number=lineno,
-                    kind=kind,
-                    checker=checker,
+                    line_number=lineno, kind=kind, checker=checker
                 )
 
         # Try to parse assertions from this line (supports multiple per line).
@@ -532,9 +527,7 @@ class MatchResult:
 
 
 def match_diagnostics(
-    assertions: list[TypeAssertion],
-    diagnostics: list[Diagnostic],
-    checker: TypeChecker,
+    assertions: list[TypeAssertion], diagnostics: list[Diagnostic], checker: TypeChecker
 ) -> MatchResult:
     """Match diagnostics against inline assertions.
 
@@ -803,10 +796,7 @@ class MdTestFile(pytest.File):
                 )
 
 
-def pytest_collect_file(
-    parent: pytest.Collector,
-    file_path: Path,
-) -> MdTestFile | None:
+def pytest_collect_file(parent: pytest.Collector, file_path: Path) -> MdTestFile | None:
     if file_path.suffix.casefold() == ".md" and file_path.stem.startswith(
         "test_typing_"
     ):

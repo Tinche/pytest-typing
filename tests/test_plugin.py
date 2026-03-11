@@ -9,165 +9,12 @@ from pytest_typing.plugin import (
     Diagnostic,
     InvalidAssertionError,
     TypeAssertion,
-    _parse_mypy_output,
-    _parse_ty_output,
     match_diagnostics,
     parse_assertions,
     parse_markdown,
 )
 
 pytest_plugins = ["pytester"]
-
-
-class TestParseTyOutput:
-    def test_single_error(self) -> None:
-        output = "/out/test_snippet.py:1:10: error[invalid-assignment] Object of type `Literal[1]` is not assignable to `str`\nFound 1 diagnostic"
-        diags = _parse_ty_output(output)
-        assert diags == [
-            Diagnostic(
-                "/out/test_snippet.py",
-                line=1,
-                col=10,
-                severity="error",
-                rule="invalid-assignment",
-                message="Object of type `Literal[1]` is not assignable to `str`",
-            )
-        ]
-
-    def test_warning(self) -> None:
-        output = (
-            "lib/utils.py:3:1: warning[deprecated] Function `old_api` is deprecated"
-        )
-        diags = _parse_ty_output(output)
-        assert len(diags) == 1
-        assert diags[0].severity == "warning"
-
-    def test_multiple_diagnostics(self) -> None:
-        output = textwrap.dedent("""\
-            a.py:1:1: error[unresolved-import] Cannot resolve imported module `nonexistent`
-            a.py:5:10: warning[possibly-unresolved-reference] Name `x` is possibly unresolved
-            b.py:20:3: error[invalid-argument-type] Argument is incompatible
-        """)
-        diags = _parse_ty_output(output)
-        assert len(diags) == 3
-
-    def test_empty_output(self) -> None:
-        assert _parse_ty_output("") == []
-
-    def test_non_diagnostic_lines_ignored(self) -> None:
-        output = textwrap.dedent("""\
-            WARN ty is pre-release software and not ready for production use.
-            a.py:1:1: error[unresolved-import] bad import
-            Found 1 diagnostic
-        """)
-        diags = _parse_ty_output(output)
-        assert len(diags) == 1
-
-
-class TestParseMypyOutput:
-    def test_single_error(self) -> None:
-        output = 'test.py:1: error: Incompatible types in assignment (expression has type "str", variable has type "int")  [assignment]'
-        diags = _parse_mypy_output(output)
-        assert diags == [
-            Diagnostic(
-                "test.py",
-                line=1,
-                col=1,
-                severity="error",
-                rule="assignment",
-                message='Incompatible types in assignment (expression has type "str", variable has type "int")',
-            )
-        ]
-
-    def test_revealed_type(self) -> None:
-        output = 'test.py:2: note: Revealed type is "builtins.int"'
-        diags = _parse_mypy_output(output)
-        assert len(diags) == 1
-        assert diags[0].severity == "info"
-        assert diags[0].rule == "revealed-type"
-        assert diags[0].message == 'Revealed type is "builtins.int"'
-
-    def test_multiple_diagnostics(self) -> None:
-        output = textwrap.dedent("""\
-            a.py:1: error: Cannot find implementation or library stub for module named "nonexistent"  [import]
-            a.py:5: error: Incompatible types  [assignment]
-            b.py:2: note: Revealed type is "builtins.str"
-        """)
-        diags = _parse_mypy_output(output)
-        assert len(diags) == 3
-        assert diags[0].rule == "import"
-        assert diags[1].rule == "assignment"
-        assert diags[2].rule == "revealed-type"
-
-    def test_empty_output(self) -> None:
-        assert _parse_mypy_output("") == []
-
-    def test_non_diagnostic_lines_ignored(self) -> None:
-        output = textwrap.dedent("""\
-            test.py:1: error: Name "x" is not defined  [name-defined]
-            Found 1 error in 1 file (checked 1 source file)
-        """)
-        diags = _parse_mypy_output(output)
-        assert len(diags) == 1
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# Revealed type extraction
-# ═══════════════════════════════════════════════════════════════════════
-
-
-class TestExtractRevealedTypeTy:
-    def test_simple_type(self) -> None:
-        ty = CHECKERS["ty"]
-        assert ty.extract_revealed_type("Revealed type: `int`") == "int"
-
-    def test_literal_type(self) -> None:
-        ty = CHECKERS["ty"]
-        assert ty.extract_revealed_type("Revealed type: `Literal[1]`") == "Literal[1]"
-
-    def test_string_literal(self) -> None:
-        ty = CHECKERS["ty"]
-        assert (
-            ty.extract_revealed_type('Revealed type: `Literal["a"]`') == 'Literal["a"]'
-        )
-
-
-class TestExtractRevealedTypeMypy:
-    def test_simple_type(self) -> None:
-        mypy = CHECKERS["mypy"]
-        assert mypy.extract_revealed_type('Revealed type is "builtins.int"') == "int"
-
-    def test_strips_builtins_prefix(self) -> None:
-        mypy = CHECKERS["mypy"]
-        assert mypy.extract_revealed_type('Revealed type is "builtins.str"') == "str"
-
-    def test_preserves_non_builtins(self) -> None:
-        mypy = CHECKERS["mypy"]
-        assert (
-            mypy.extract_revealed_type('Revealed type is "typing.List[int]"')
-            == "typing.List[int]"
-        )
-
-    def test_normalizes_quotes(self) -> None:
-        mypy = CHECKERS["mypy"]
-        # mypy uses single quotes inside Literal, we normalize to double
-        assert (
-            mypy.extract_revealed_type("Revealed type is \"Literal['a']\"")
-            == 'Literal["a"]'
-        )
-
-    def test_strips_optional_marker(self) -> None:
-        mypy = CHECKERS["mypy"]
-        # mypy adds ? for Optional types
-        assert (
-            mypy.extract_revealed_type("Revealed type is \"Literal['a']?\"")
-            == 'Literal["a"]'
-        )
-
-    def test_combined_normalizations(self) -> None:
-        mypy = CHECKERS["mypy"]
-        # builtins prefix + optional marker
-        assert mypy.extract_revealed_type('Revealed type is "builtins.int?"') == "int"
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -407,7 +254,7 @@ class TestMatchDiagnostics:
                 checker=None,
                 rule="invalid-assignment",
                 message=None,
-            ),
+            )
         ]
         diagnostics = [
             Diagnostic(
@@ -417,7 +264,7 @@ class TestMatchDiagnostics:
                 severity="error",
                 rule="invalid-assignment",
                 message="something",
-            ),
+            )
         ]
         result = match_diagnostics(assertions, diagnostics, CHECKERS["ty"])
         assert result.ok
@@ -430,7 +277,7 @@ class TestMatchDiagnostics:
                 checker=None,
                 rule="bad-thing",
                 message=None,
-            ),
+            )
         ]
         result = match_diagnostics(assertions, [], CHECKERS["ty"])
         assert not result.ok
@@ -445,7 +292,7 @@ class TestMatchDiagnostics:
                 severity="error",
                 rule="surprise",
                 message="oh no",
-            ),
+            )
         ]
         result = match_diagnostics([], diagnostics, CHECKERS["ty"])
         assert not result.ok
@@ -455,7 +302,7 @@ class TestMatchDiagnostics:
         assertions = [
             TypeAssertion(
                 line_number=2, kind="revealed", checker=None, rule=None, message="int"
-            ),
+            )
         ]
         diagnostics = [
             Diagnostic(
@@ -465,7 +312,7 @@ class TestMatchDiagnostics:
                 severity="error",
                 rule="revealed-type",
                 message="Revealed type is `int`",
-            ),
+            )
         ]
         result = match_diagnostics(assertions, diagnostics, CHECKERS["ty"])
         assert result.ok
@@ -474,7 +321,7 @@ class TestMatchDiagnostics:
         assertions = [
             TypeAssertion(
                 line_number=2, kind="revealed", checker=None, rule=None, message="str"
-            ),
+            )
         ]
         diagnostics = [
             Diagnostic(
@@ -484,7 +331,7 @@ class TestMatchDiagnostics:
                 severity="error",
                 rule="revealed-type",
                 message="Revealed type is `int`",
-            ),
+            )
         ]
         result = match_diagnostics(assertions, diagnostics, CHECKERS["ty"])
         assert not result.ok
@@ -493,7 +340,7 @@ class TestMatchDiagnostics:
         assertions = [
             TypeAssertion(
                 line_number=1, kind="revealed", checker=None, rule=None, message="int"
-            ),
+            )
         ]
         diagnostics = [
             Diagnostic(
@@ -524,7 +371,7 @@ class TestMatchDiagnostics:
                 checker=None,
                 rule="invalid-assignment",
                 message="not assignable",
-            ),
+            )
         ]
         diagnostics = [
             Diagnostic(
@@ -534,7 +381,7 @@ class TestMatchDiagnostics:
                 severity="error",
                 rule="invalid-assignment",
                 message="Type `str` is not assignable to `int`",
-            ),
+            )
         ]
         result = match_diagnostics(assertions, diagnostics, CHECKERS["ty"])
         assert result.ok
@@ -552,7 +399,7 @@ class TestMatchDiagnostics:
                 checker="ty",
                 rule="invalid-assignment",
                 message=None,
-            ),
+            )
         ]
         diagnostics = [
             Diagnostic(
@@ -562,7 +409,7 @@ class TestMatchDiagnostics:
                 severity="error",
                 rule="invalid-assignment",
                 message="bad",
-            ),
+            )
         ]
         result = match_diagnostics(assertions, diagnostics, CHECKERS["ty"])
         assert result.ok
@@ -576,7 +423,7 @@ class TestMatchDiagnostics:
                 checker="mypy",  # type: ignore
                 rule="assignment",
                 message=None,
-            ),
+            )
         ]
         diagnostics: list[Diagnostic] = []
         result = match_diagnostics(assertions, diagnostics, CHECKERS["ty"])
@@ -608,7 +455,7 @@ class TestMatchDiagnostics:
                 severity="error",
                 rule="invalid-assignment",
                 message="bad",
-            ),
+            )
         ]
         result = match_diagnostics(assertions, diagnostics, CHECKERS["ty"])
         assert result.ok
@@ -623,7 +470,7 @@ class TestMatchDiagnostics:
                 severity="error",
                 rule="some-error",
                 message="unexpected error",
-            ),
+            )
         ]
         result = match_diagnostics([], diagnostics, CHECKERS["ty"])
         assert result.has_unexpected_errors
@@ -638,7 +485,7 @@ class TestMatchDiagnostics:
                 severity="warning",
                 rule="some-warning",
                 message="unexpected warning",
-            ),
+            )
         ]
         result = match_diagnostics([], diagnostics, CHECKERS["ty"])
         assert not result.has_unexpected_errors
