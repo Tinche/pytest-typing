@@ -74,12 +74,28 @@ a: str = 1  # error: [invalid-assignment] Object of type `Literal[1]` is not ass
 
 Although this may be fragile since checkers can improve their error messages from time to time.
 
+## Separate-line comments
+
+Comments may be placed above lines that are expected to produce errors.
+
+```python
+# error: [invalid-assignment]
+a: str = 1
+```
+
 ## This test shows type reveals
 
 `reveal_type` statements can be matched against.
 
 ```python
 reveal_type(1)  # revealed: Literal[1]
+```
+
+Or, again, on the line above.
+
+```python
+# revealed: Literal[1]
+reveal_type(1)
 ```
 
 ````

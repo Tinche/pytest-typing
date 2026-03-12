@@ -19,6 +19,16 @@ Checkers usually have incompatible error codes, so each checker gets its own ded
 a: str = 1  # ty-error: [invalid-assignment]  # mypy-error: [assignment]
 ```
 
+## Errors above
+
+We can expect errors on lines above.
+
+```python
+# ty-error: [invalid-assignment]
+# mypy-error: [assignment]
+a: str = 1
+```
+
 ## Type reveals
 
 Type reveals using `# revealed:` works properly.
