@@ -110,3 +110,13 @@ a: int = 1
 ````
 
 _pytest\_typing_ is inspired by Astral's [mdtest framework](https://github.com/astral-sh/ruff/tree/main/crates/ty_test).
+
+## Project Information
+
+- [**PyPI**](https://pypi.org/project/pytest_typing/)
+- [**Source Code**](https://github.com/Tinche/pytest_typing)
+- [**Changelog**](https://github.com/Tinche/pytest_typing/blob/main/CHANGELOG.md)
+
+## License
+
+_pytest\_typing_ is written by [Tin Tvrtković](https://threeofwands.com/) and distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
