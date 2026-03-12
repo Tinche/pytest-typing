@@ -15,3 +15,12 @@ In addition to matching on error codes, we can additionally match the exact erro
 ```python only=mypy
 a: str = 1  # error: [assignment] Incompatible types in assignment (expression has type "int", variable has type "str")
 ```
+
+## reveal_type without import
+
+`reveal_type` statements without importing them should work.
+
+```python only=mypy
+# revealed: Literal[1]
+reveal_type(1)
+```

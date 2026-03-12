@@ -98,33 +98,6 @@ class TestMatchDiagnostics:
         result = match_diagnostics(assertions, diagnostics, CHECKERS["ty"])
         assert not result.ok
 
-    def test_undefined_reveal_suppressed(self) -> None:
-        assertions = [
-            TypeAssertion(
-                line_number=1, kind="revealed", checker=None, rule=None, message="int"
-            )
-        ]
-        diagnostics = [
-            Diagnostic(
-                file="t.py",
-                line=1,
-                col=1,
-                severity="error",
-                rule="revealed-type",
-                message="Revealed type is `int`",
-            ),
-            Diagnostic(
-                file="t.py",
-                line=1,
-                col=1,
-                severity="warning",
-                rule="undefined-reveal",
-                message="reveal_type used without importing",
-            ),
-        ]
-        result = match_diagnostics(assertions, diagnostics, CHECKERS["ty"])
-        assert result.ok
-
     def test_message_substring_match(self) -> None:
         assertions = [
             TypeAssertion(
