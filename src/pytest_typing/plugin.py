@@ -297,7 +297,7 @@ class TypeAssertion:
 _DIAG_ASSERTION_RE = re.compile(
     r"#\s*(?:(?P<checker>\w+)-)?(?P<severity>error):\s*"
     r"\[(?P<rule>[^\]]+)\]"
-    r'(?:\s*"(?P<message>[^"]*)")?'
+    r"(?:\s*(?P<message>[^#]*))?"
 )
 
 # ``# revealed: <type>``
@@ -397,7 +397,7 @@ def parse_assertions(source: str) -> list[TypeAssertion]:
                     kind="error",
                     checker=_checker_or_none(diag_match.group("checker") or None),
                     rule=diag_match.group("rule"),
-                    message=diag_match.group("message"),
+                    message=diag_match.group("message") or None,
                 )
             )
         for revealed_match in revealed_matches:
@@ -574,7 +574,7 @@ def match_diagnostics(
                 break
             if assertion.rule is not None and diag.rule != assertion.rule:
                 continue
-            if assertion.message and assertion.message not in diag.message:
+            if assertion.message is not None and assertion.message not in diag.message:
                 continue
             assertion.matched = True
             used_diags.add(idx)

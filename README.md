@@ -47,19 +47,32 @@ This is what an example file might look like, defining two tests:
 
 This is free-form text that can explain the test but is ignored by the plugin.
 
-## This is a test
+## This is a happy-path test
+
+This code snippet should type-check without problems.
 
 ```python
 a: int = 1
 ```
 
-## This is another test
+## This is a sad-path test
 
-This test demonstrates how errors can be checked.
+This test demonstrates how errors can be checked using error codes.
+Note that error codes are specific to individual type checkers.
 
 ```python
 a: str = 1  # error: [invalid-assignment]
 ```
+
+## We can match on error messages too
+
+In addition to matching on error codes, we can additionally match the exact error messages too.
+
+```python
+a: str = 1  # error: [invalid-assignment] Object of type `Literal[1]` is not assignable to `str`
+```
+
+Although this may be fragile since checkers can improve their error messages from time to time.
 
 ## This test shows type reveals
 
