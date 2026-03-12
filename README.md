@@ -1,4 +1,4 @@
-# *pytest_typing*: Test Your Types
+# *pytest-typing*: Test Your Types
 
 *Ensure your types do what you think they do.*
 
@@ -11,9 +11,9 @@
 
 <!-- begin-teaser -->
 
-**pytest_typing** lets you test the type signatures of your code to ensure they really are what you expect.
+**pytest-typing** lets you test the type signatures of your code to ensure they really are what you expect.
 You write Markdown files with Python code blocks and expected type assertions;
-_pytest\_typing_ runs type checkers on these blocks and compares the actual and expected outputs.
+_pytest\-typing_ runs type checkers on these blocks and compares the actual and expected outputs.
 
 <!-- end-teaser -->
 
@@ -25,7 +25,7 @@ $ # or
 $ uv add pytest-typing --group test
 ```
 
-Then, configure _pytest\_typing_ with the type checker (or checkers) you want to use in `pyproject.toml`:
+Then, configure _pytest\-typing_ with the type checker (or checkers) you want to use in `pyproject.toml`:
 
 ```toml
 [tool.pytest]
@@ -63,8 +63,7 @@ Note that error codes are specific to individual type checkers.
 ```python
 a: str = 1  # error: [invalid-assignment]
 ```
-
-## We can match on error messages too
+````
 
 In addition to matching on error codes, we can additionally match the exact error messages too.
 
@@ -74,16 +73,12 @@ a: str = 1  # error: [invalid-assignment] Object of type `Literal[1]` is not ass
 
 Although this may be fragile since checkers can improve their error messages from time to time.
 
-## Separate-line comments
-
 Comments may be placed above lines that are expected to produce errors.
 
 ```python
 # error: [invalid-assignment]
 a: str = 1
 ```
-
-## This test shows type reveals
 
 `reveal_type` statements can be matched against.
 
@@ -97,8 +92,6 @@ Or, again, on the line above.
 # revealed: Literal[1]
 reveal_type(1)
 ```
-
-````
 
 ## Testing on multiple checkers
 
@@ -125,7 +118,7 @@ a: int = 1
 ```
 ````
 
-_pytest\_typing_ is inspired by Astral's [mdtest framework](https://github.com/astral-sh/ruff/tree/main/crates/ty_test).
+_pytest\-typing_ is inspired by Astral's [mdtest framework](https://github.com/astral-sh/ruff/tree/main/crates/ty_test).
 
 ## Project Information
 
@@ -135,4 +128,4 @@ _pytest\_typing_ is inspired by Astral's [mdtest framework](https://github.com/a
 
 ## License
 
-_pytest\_typing_ is written by [Tin Tvrtković](https://threeofwands.com/) and distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
+_pytest\-typing_ is written by [Tin Tvrtković](https://threeofwands.com/) and distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
