@@ -32,7 +32,7 @@ cov *args="-x --ff tests":
     uv run {{ if python != '' { '-p ' + python } else { '' } }} --group test --group lint coverage run -m pytest {{args}}
     {{ if covcleanup == "true" { "uv run coverage combine" } else { "" } }}
     {{ if covcleanup == "true" { "uv run coverage report" } else { "" } }}
-    {{ if covcleanup == "true" { "@rm .coverage*" } else { "" } }}
+    {{ if covcleanup == "true" { "rm .coverage*" } else { "" } }}
 
 covall:
     just python=python3.10 covcleanup=false cov
