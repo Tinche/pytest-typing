@@ -469,8 +469,7 @@ class TestIntegration:
                 # Multiple errors
 
                 ```py
-                # error: [nonexistent]
-                # error: [invalid-assignment]
+                # error: [invalid-assignment] Wrong message
                 a: str = 1
                 ```
             """),
