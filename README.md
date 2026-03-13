@@ -122,9 +122,9 @@ _pytest-typing_ is inspired by Astral's [mdtest framework](https://github.com/as
 
 ## Project Information
 
-- [**PyPI**](https://pypi.org/project/pytest_typing/)
-- [**Source Code**](https://github.com/Tinche/pytest_typing)
-- [**Changelog**](https://github.com/Tinche/pytest_typing/blob/main/CHANGELOG.md)
+- [**PyPI**](https://pypi.org/project/pytest-typing/)
+- [**Source Code**](https://github.com/Tinche/pytest-typing)
+- [**Changelog**](https://github.com/Tinche/pytest-typing/blob/main/CHANGELOG.md)
 
 ## License
 
