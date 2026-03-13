@@ -25,7 +25,7 @@ $ # or
 $ uv add pytest-typing --group dev
 ```
 
-Then, configure _pytest\-typing_ with the type checker (or checkers) you want to use in `pyproject.toml`:
+Then, configure _pytest-typing_ with the type checker (or checkers) you want to use in `pyproject.toml`:
 
 ```toml
 [tool.pytest]
