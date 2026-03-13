@@ -22,7 +22,7 @@ First, install the plugin, making it discoverable by _pytest_:
 ```bash
 $ pip install pytest-typing
 $ # or
-$ uv add pytest-typing --group test
+$ uv add pytest-typing --group dev
 ```
 
 Then, configure _pytest\-typing_ with the type checker (or checkers) you want to use in `pyproject.toml`:
