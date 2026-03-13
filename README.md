@@ -13,7 +13,7 @@
 
 **pytest-typing** lets you test the type signatures of your code to ensure they really are what you expect.
 You write Markdown files with Python code blocks and expected type assertions;
-_pytest\-typing_ runs type checkers on these blocks and compares the actual and expected outputs.
+_pytest-typing_ runs type checkers on these blocks and compares the actual and expected outputs.
 
 <!-- end-teaser -->
 
