@@ -30,14 +30,7 @@ from ._base import Checker, Diagnostic, TypeChecker, checker_or_none
 from ._mypy import MypyChecker
 from ._ty import TyChecker
 
-# ── Registry ─────────────────────────────────────────────────────────
-
-CHECKERS: dict[Checker, TypeChecker] = {"ty": TyChecker(), "mypy": MypyChecker()}
-
-
-# ───────────────────────────────────────────────────────────────────────
-# Inline-assertion parser
-# ───────────────────────────────────────────────────────────────────────
+CHECKERS: dict[Checker, TypeChecker] = {"ty": TyChecker, "mypy": MypyChecker}
 
 
 class InvalidAssertionError(Exception):
@@ -433,7 +426,7 @@ def _get_checkers(config: pytest.Config) -> list[TypeChecker]:
             raise pytest.UsageError(
                 f"Unknown typing checker {name!r}. Available: {available}"
             )
-        checkers.append(CHECKERS[name])
+        checkers.append(CHECKERS[name])  # type: ignore[index]
     return checkers
 
 

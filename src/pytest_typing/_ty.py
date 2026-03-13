@@ -4,11 +4,11 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Final
+from typing import ClassVar, Final
 
 import pytest
 
-from ._base import Diagnostic, InternalCheckerError, TypeChecker
+from ._base import Checker, Diagnostic, InternalCheckerError
 
 _CONCISE_RE: Final = re.compile(
     r"^(?P<file>.+?):(?P<line>\d+):(?P<col>\d+): "
@@ -17,33 +17,35 @@ _CONCISE_RE: Final = re.compile(
 )
 
 
-def _parse_ty_output(output: str) -> list[Diagnostic]:
-    diagnostics: list[Diagnostic] = []
-    for raw_line in output.splitlines():
-        line = raw_line.strip()
-        m = _CONCISE_RE.match(line)
-        if m:
-            severity = m.group("severity")
-            if severity not in ("error", "warning", "info"):  # pragma: no cover
-                raise ValueError(severity)
-            diagnostics.append(
-                Diagnostic(
-                    file=m.group("file"),
-                    line=int(m.group("line")),
-                    col=int(m.group("col")),
-                    severity=severity,  # type: ignore
-                    rule=m.group("rule"),
-                    message=m.group("message"),
+class TyChecker:
+    name: ClassVar[Checker] = "ty"
+
+    @staticmethod
+    def parse_output(output: str) -> list[Diagnostic]:
+        """Parse ty output into diagnostics."""
+        diagnostics: list[Diagnostic] = []
+        for raw_line in output.splitlines():
+            line = raw_line.strip()
+            m = _CONCISE_RE.match(line)
+            if m:
+                severity = m.group("severity")
+                if severity not in ("error", "warning", "info"):  # pragma: no cover
+                    raise ValueError(severity)
+                diagnostics.append(
+                    Diagnostic(
+                        file=m.group("file"),
+                        line=int(m.group("line")),
+                        col=int(m.group("col")),
+                        severity=severity,  # type: ignore
+                        rule=m.group("rule"),
+                        message=m.group("message"),
+                    )
                 )
-            )
-    return diagnostics
+        return diagnostics
 
-
-class TyChecker(TypeChecker):
-    name = "ty"
-
+    @staticmethod
     def check(
-        self, file_path: Path, project_dir: str, config: pytest.Config
+        file_path: Path, project_dir: str, config: pytest.Config
     ) -> list[Diagnostic]:
         cmd = [
             sys.executable,
@@ -65,9 +67,10 @@ class TyChecker(TypeChecker):
             # Internal error or misconfiguration
             raise InternalCheckerError(result.stderr, "ty")
 
-        return _parse_ty_output(result.stdout)
+        return TyChecker.parse_output(result.stdout)
 
-    def extract_revealed_type(self, message: str) -> str:
+    @staticmethod
+    def extract_revealed_type(message: str) -> str:
         """Extract the type from a ty revealed-type diagnostic message.
 
         Example: "Revealed type: `Literal[1]`" -> "Literal[1]"

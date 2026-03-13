@@ -4,11 +4,11 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Final
+from typing import ClassVar, Final
 
 import pytest
 
-from ._base import Diagnostic, InternalCheckerError, TypeChecker
+from ._base import Checker, Diagnostic, InternalCheckerError
 
 # mypy error format: file:line: error: message [rule]
 # mypy note format: file:line: note: message
@@ -18,42 +18,44 @@ _MYPY_DIAG_RE: Final = re.compile(
 )
 
 
-def _parse_mypy_output(output: str) -> list[Diagnostic]:
-    diagnostics: list[Diagnostic] = []
-    for raw_line in output.splitlines():
-        line = raw_line.strip()
-        m = _MYPY_DIAG_RE.match(line)
-        if m:
-            severity = m.group("severity")
-            message = m.group("message")
-            rule = m.group("rule") or ""
+class MypyChecker:
+    name: ClassVar[Checker] = "mypy"
 
-            # mypy uses "note" for reveal_type, map it to a rule we recognize
-            if severity == "note" and message.startswith("Revealed type is "):
-                rule = "revealed-type"
-                severity = "info"
+    @staticmethod
+    def parse_output(output: str) -> list[Diagnostic]:
+        """Parse mypy output into diagnostics."""
+        diagnostics: list[Diagnostic] = []
+        for raw_line in output.splitlines():
+            line = raw_line.strip()
+            m = _MYPY_DIAG_RE.match(line)
+            if m:
+                severity = m.group("severity")
+                message = m.group("message")
+                rule = m.group("rule") or ""
 
-            if severity not in ("error", "warning", "info"):  # pragma: no cover
-                raise ValueError(severity)
+                # mypy uses "note" for reveal_type, map it to a rule we recognize
+                if severity == "note" and message.startswith("Revealed type is "):
+                    rule = "revealed-type"
+                    severity = "info"
 
-            diagnostics.append(
-                Diagnostic(
-                    file=m.group("file"),
-                    line=int(m.group("line")),
-                    col=1,  # mypy doesn't provide column in default output
-                    severity=severity,  # type: ignore
-                    rule=rule,
-                    message=message,
+                if severity not in ("error", "warning", "info"):  # pragma: no cover
+                    raise ValueError(severity)
+
+                diagnostics.append(
+                    Diagnostic(
+                        file=m.group("file"),
+                        line=int(m.group("line")),
+                        col=1,  # mypy doesn't provide column in default output
+                        severity=severity,  # type: ignore
+                        rule=rule,
+                        message=message,
+                    )
                 )
-            )
-    return diagnostics
+        return diagnostics
 
-
-class MypyChecker(TypeChecker):
-    name = "mypy"
-
+    @staticmethod
     def check(
-        self, file_path: Path, project_dir: str, config: pytest.Config
+        file_path: Path, project_dir: str, config: pytest.Config
     ) -> list[Diagnostic]:
         cmd = [
             sys.executable,
@@ -70,9 +72,10 @@ class MypyChecker(TypeChecker):
         if result.returncode not in (0, 1):
             # Internal error or misconfiguration
             raise InternalCheckerError(result.stderr, "mypy")
-        return _parse_mypy_output(result.stdout)
+        return MypyChecker.parse_output(result.stdout)
 
-    def extract_revealed_type(self, message: str) -> str:
+    @staticmethod
+    def extract_revealed_type(message: str) -> str:
         """Extract the type from a mypy revealed-type diagnostic message.
 
         Example: 'Revealed type is "builtins.int"' -> "int"

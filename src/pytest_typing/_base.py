@@ -1,9 +1,8 @@
 """Base classes and types for type checker backends."""
 
-import abc
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Protocol
 
 import pytest
 
@@ -22,20 +21,25 @@ class Diagnostic:
     message: str
 
 
-class TypeChecker(abc.ABC):
-    """Abstract interface for a type checker backend."""
+class TypeChecker(Protocol):
+    """Protocol for a type checker backend."""
 
-    name: Checker
+    @property
+    def name(self) -> Checker: ...
 
-    @abc.abstractmethod
     def check(
         self, file_path: Path, project_dir: str, config: pytest.Config
     ) -> list[Diagnostic]:
         """Run the checker on *file_path* and return parsed diagnostics."""
+        ...
 
-    @abc.abstractmethod
+    def parse_output(self, output: str) -> list[Diagnostic]:
+        """Parse raw checker output into diagnostics."""
+        ...
+
     def extract_revealed_type(self, message: str) -> str:
         """Extract the type from a revealed-type diagnostic message."""
+        ...
 
 
 class InternalCheckerError(Exception):
