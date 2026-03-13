@@ -128,4 +128,4 @@ _pytest-typing_ is inspired by Astral's [mdtest framework](https://github.com/as
 
 ## License
 
-_pytest\-typing_ is written by [Tin Tvrtković](https://threeofwands.com/) and distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
+_pytest-typing_ is written by [Tin Tvrtković](https://threeofwands.com/) and distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
