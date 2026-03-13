@@ -6,7 +6,9 @@ from typing import Final
 
 import pytest
 
-from pytest_typing.plugin import CHECKERS, Diagnostic, _parse_ty_output
+from pytest_typing._base import Diagnostic
+from pytest_typing._ty import _parse_ty_output
+from pytest_typing.plugin import CHECKERS
 
 ty: Final = CHECKERS["ty"]
 

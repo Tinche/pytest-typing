@@ -16,10 +16,7 @@ Markdown headings define nested test names. Each fenced
 ``\\`\\`\\`py`` block is a separate test item.
 """
 
-import abc
 import re
-import subprocess
-import sys
 import tempfile
 from collections.abc import Generator
 from dataclasses import dataclass
@@ -29,215 +26,9 @@ from typing import Any, Final, Literal
 import pytest
 from _pytest.nodes import TerminalRepr, TracebackStyle
 
-# ───────────────────────────────────────────────────────────────────────
-# Diagnostic model
-# ───────────────────────────────────────────────────────────────────────
-
-
-@dataclass(slots=True)
-class Diagnostic:
-    """A single diagnostic emitted by a type checker."""
-
-    file: str
-    line: int
-    col: int
-    severity: Literal["error", "warning", "info"]
-    rule: str  # e.g. "invalid-assignment"
-    message: str
-
-
-# ───────────────────────────────────────────────────────────────────────
-# Type checker backend interface
-# ───────────────────────────────────────────────────────────────────────
-
-Checker = Literal["ty", "mypy"]
-
-
-def _checker_or_none(value: str | None) -> Checker | None:
-    """A poor man's `cattrs.structure`."""
-    if value is None:
-        return None
-    if value in ("ty", "mypy"):
-        return value  # type: ignore[return-value]
-    raise ValueError(f"Invalid checker value ({value})")
-
-
-class TypeChecker(abc.ABC):
-    """Abstract interface for a type checker backend."""
-
-    name: Checker
-
-    @abc.abstractmethod
-    def check(
-        self, file_path: Path, project_dir: str, config: pytest.Config
-    ) -> list[Diagnostic]:
-        """Run the checker on *file_path* and return parsed diagnostics."""
-
-    @abc.abstractmethod
-    def extract_revealed_type(self, message: str) -> str:
-        """Extract the type from a revealed-type diagnostic message."""
-
-
-# ───────────────────────────────────────────────────────────────────────
-# ty backend
-# ───────────────────────────────────────────────────────────────────────
-
-_CONCISE_RE: Final = re.compile(
-    r"^(?P<file>.+?):(?P<line>\d+):(?P<col>\d+): "
-    r"(?P<severity>error|warning|info)\[(?P<rule>[^\]]+)\] "
-    r"(?P<message>.+)$"
-)
-
-
-def _parse_ty_output(output: str) -> list[Diagnostic]:
-    diagnostics: list[Diagnostic] = []
-    for raw_line in output.splitlines():
-        line = raw_line.strip()
-        m = _CONCISE_RE.match(line)
-        if m:
-            severity = m.group("severity")
-            if severity not in ("error", "warning", "info"):  # pragma: no cover
-                raise ValueError(severity)
-            diagnostics.append(
-                Diagnostic(
-                    file=m.group("file"),
-                    line=int(m.group("line")),
-                    col=int(m.group("col")),
-                    severity=severity,  # type: ignore
-                    rule=m.group("rule"),
-                    message=m.group("message"),
-                )
-            )
-    return diagnostics
-
-
-class TyChecker(TypeChecker):
-    name = "ty"
-
-    def check(
-        self, file_path: Path, project_dir: str, config: pytest.Config
-    ) -> list[Diagnostic]:
-        cmd = [
-            sys.executable,
-            "-m",
-            "ty",
-            "check",
-            "--output-format",
-            "concise",
-            "--no-progress",
-            "--project",
-            project_dir,
-        ]
-
-        cmd.append(str(file_path))
-
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=project_dir)  # noqa: S603
-        # Docs on ty status codes: https://docs.astral.sh/ty/reference/exit-codes/
-        if result.returncode not in (0, 1):
-            # Internal error or misconfiguration
-            raise InternalCheckerError(result.stderr, "ty")
-
-        return _parse_ty_output(result.stdout)
-
-    def extract_revealed_type(self, message: str) -> str:
-        """Extract the type from a ty revealed-type diagnostic message.
-
-        Example: "Revealed type: `Literal[1]`" -> "Literal[1]"
-        """
-        match = re.search(r"`([^`]+)`", message)
-        assert match is not None
-        return match.group(1)
-
-
-# ───────────────────────────────────────────────────────────────────────
-# mypy backend
-# ───────────────────────────────────────────────────────────────────────
-
-# mypy error format: file:line: error: message [rule]
-# mypy note format: file:line: note: message
-_MYPY_DIAG_RE: Final = re.compile(
-    r"^(?P<file>.+?):(?P<line>\d+): (?P<severity>error|warning|note): "
-    r"(?P<message>.+?)(?:\s+\[(?P<rule>[^\]]+)\])?$"
-)
-
-
-def _parse_mypy_output(output: str) -> list[Diagnostic]:
-    diagnostics: list[Diagnostic] = []
-    for raw_line in output.splitlines():
-        line = raw_line.strip()
-        m = _MYPY_DIAG_RE.match(line)
-        if m:
-            severity = m.group("severity")
-            message = m.group("message")
-            rule = m.group("rule") or ""
-
-            # mypy uses "note" for reveal_type, map it to a rule we recognize
-            if severity == "note" and message.startswith("Revealed type is "):
-                rule = "revealed-type"
-                severity = "info"
-
-            if severity not in ("error", "warning", "info"):  # pragma: no cover
-                raise ValueError(severity)
-
-            diagnostics.append(
-                Diagnostic(
-                    file=m.group("file"),
-                    line=int(m.group("line")),
-                    col=1,  # mypy doesn't provide column in default output
-                    severity=severity,  # type: ignore
-                    rule=rule,
-                    message=message,
-                )
-            )
-    return diagnostics
-
-
-class MypyChecker(TypeChecker):
-    name = "mypy"
-
-    def check(
-        self, file_path: Path, project_dir: str, config: pytest.Config
-    ) -> list[Diagnostic]:
-        cmd = [
-            sys.executable,
-            "-m",
-            "mypy",
-            "--no-color-output",
-            "--show-error-codes",
-            "--no-error-summary",
-            str(file_path),
-        ]
-
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=project_dir)  # noqa: S603
-        # Mypy error codes: https://github.com/python/mypy/issues/6003
-        if result.returncode not in (0, 1):
-            # Internal error or misconfiguration
-            raise InternalCheckerError(result.stderr, "mypy")
-        return _parse_mypy_output(result.stdout)
-
-    def extract_revealed_type(self, message: str) -> str:
-        """Extract the type from a mypy revealed-type diagnostic message.
-
-        Example: 'Revealed type is "builtins.int"' -> "int"
-
-        Normalizations applied:
-        - Strip "builtins." prefix
-        - Convert single quotes to double quotes (for Literal types)
-        - Strip trailing "?" (mypy's optional marker)
-        """
-        match = re.search(r'"([^"]+)"', message)
-        assert match is not None
-        revealed = match.group(1)
-        # mypy uses fully qualified names like "builtins.int", simplify common ones
-        if revealed.startswith("builtins."):
-            revealed = revealed[len("builtins.") :]
-        # Normalize single quotes to double quotes for consistency with ty
-        revealed = revealed.replace("'", '"')
-        # Strip trailing "?" (mypy's way of indicating Optional)
-        if revealed.endswith("?"):
-            revealed = revealed[:-1]
-        return revealed
-
+from ._base import Checker, Diagnostic, TypeChecker, checker_or_none
+from ._mypy import MypyChecker
+from ._ty import TyChecker
 
 # ── Registry ─────────────────────────────────────────────────────────
 
@@ -337,7 +128,7 @@ def parse_assertions(source: str) -> list[TypeAssertion]:
         assertion_like_match = _ASSERTION_LIKE_RE.search(line)
         if assertion_like_match:
             kind = assertion_like_match.group("kind")
-            checker = _checker_or_none(assertion_like_match.group("checker"))
+            checker = checker_or_none(assertion_like_match.group("checker"))
             # Only "error" is valid for bracket-style assertions
             if kind != "error":
                 raise InvalidAssertionError(
@@ -358,7 +149,7 @@ def parse_assertions(source: str) -> list[TypeAssertion]:
                         TypeAssertion(
                             line_number=-1,  # will be set when anchored
                             kind=diag_kind,
-                            checker=_checker_or_none(
+                            checker=checker_or_none(
                                 diag_match.group("checker") or None
                             ),
                             rule=diag_match.group("rule"),
@@ -395,7 +186,7 @@ def parse_assertions(source: str) -> list[TypeAssertion]:
                 TypeAssertion(
                     line_number=lineno,
                     kind="error",
-                    checker=_checker_or_none(diag_match.group("checker") or None),
+                    checker=checker_or_none(diag_match.group("checker") or None),
                     rule=diag_match.group("rule"),
                     message=diag_match.group("message") or None,
                 )
@@ -822,12 +613,4 @@ class MdTestError(Exception):
         self.md_file = md_file
         self.md_line = md_line
         self.section = section
-        self.checker_name = checker_name
-
-
-class InternalCheckerError(Exception):
-    """Raised when a type checker encounters an internal error or misconfiguration."""
-
-    def __init__(self, message: str, checker_name: Checker) -> None:
-        super().__init__(message)
         self.checker_name = checker_name
