@@ -118,7 +118,7 @@ a: int = 1
 ```
 ````
 
-_pytest\-typing_ is inspired by Astral's [mdtest framework](https://github.com/astral-sh/ruff/tree/main/crates/ty_test).
+_pytest-typing_ is inspired by Astral's [mdtest framework](https://github.com/astral-sh/ruff/tree/main/crates/ty_test).
 
 ## Project Information
 
