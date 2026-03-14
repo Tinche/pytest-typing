@@ -6,30 +6,35 @@ import pytest
 
 
 def test_collects_matching_files(pytester: pytest.Pytester) -> None:
+    """Simple collection works."""
     pytester.makefile(".md", test_typing_basics="# Test\n\n```py\nx = 1\n```\n")
     result = pytester.runpytest("--collect-only")
     result.stdout.fnmatch_lines(["*Test*"])
 
 
 def test_ignores_non_prefixed_markdown(pytester: pytest.Pytester) -> None:
+    """Files not matching the prefix aren't collected."""
     pytester.makefile(".md", readme="# Readme\n\n```py\nx = 1\n```\n")
     result = pytester.runpytest("--collect-only")
     result.stdout.no_fnmatch_line("*Readme*")
 
 
 def test_ignores_other_test_markdown(pytester: pytest.Pytester) -> None:
+    """Files not matching the prefix aren't collected."""
     pytester.makefile(".md", test_mypy_stuff="# Mypy\n\n```py\nx = 1\n```\n")
     result = pytester.runpytest("--collect-only")
-    result.stdout.no_fnmatch_line("*Mypy*")
+    result.stdout.no_fnmatch_line("*mypy*")
 
 
 def test_marker_filtering(pytester: pytest.Pytester) -> None:
+    """Files with the `test_typing` prefix are collected."""
     pytester.makefile(".md", test_typing_basics="# Test\n\n```py\nx = 1\n```\n")
     result = pytester.runpytest("--collect-only", "-m", "typing")
     result.stdout.fnmatch_lines(["*Test*"])
 
 
 def test_nested_headings_collected(pytester: pytest.Pytester) -> None:
+    """Nested headings work correctly."""
     pytester.makefile(
         ".md",
         test_typing_suite=textwrap.dedent("""\
@@ -79,6 +84,7 @@ def test_no_python_blocks_means_no_items(pytester: pytest.Pytester) -> None:
 
 
 def test_skip_attribute_excludes_block(pytester: pytest.Pytester) -> None:
+    """Python blocks can be ignored using `skip`."""
     pytester.makefile(
         ".md",
         test_typing_skip=textwrap.dedent("""\
@@ -103,6 +109,7 @@ def test_skip_attribute_excludes_block(pytester: pytest.Pytester) -> None:
 
 
 def test_only_attribute_includes_block(pytester: pytest.Pytester) -> None:
+    """Code blocks can be filtered using `only`."""
     pytester.makefile(
         ".md",
         test_typing_only=textwrap.dedent("""\
@@ -127,6 +134,7 @@ def test_only_attribute_includes_block(pytester: pytest.Pytester) -> None:
 
 
 def test_unknown_checker_errors(pytester: pytest.Pytester) -> None:
+    """We validate typing checkers."""
     pytester.makefile(".md", test_typing_x="# Test\n\n```py\nx = 1\n```\n")
     result = pytester.runpytest("--typing-checkers=nope")
     result.stdout.fnmatch_lines(["*Unknown typing checker*"])
@@ -222,7 +230,7 @@ def test_err_message_used_only_once(pytester: pytest.Pytester) -> None:
 
 
 def test_unmatched_error_assertion_with_message(pytester: pytest.Pytester) -> None:
-    """Unmatched errors with messages are properly displayed"""
+    """Unmatched errors with messages are properly displayed."""
     pytester.makefile(
         ".md",
         test_typing_multiple_errors=textwrap.dedent("""\
@@ -237,3 +245,18 @@ def test_unmatched_error_assertion_with_message(pytester: pytest.Pytester) -> No
     result = pytester.runpytest_inprocess()
     assert result.ret == 1
     result.stdout.fnmatch_lines("*Wrong message*")
+
+
+def test_both_skip_and_only(pytester: pytest.Pytester) -> None:
+    """Combining both `skip` and `only` results in an error."""
+    pytester.makefile(
+        ".md",
+        test_typing_skip_only=textwrap.dedent("""\
+            ```py only=ty skip=mypy
+            a: int = 1
+            ```
+        """),
+    )
+    result = pytester.runpytest()
+    assert result.ret == 2  # Interrupted
+    result.stdout.fnmatch_lines("*`only` and `skip` cannot be used together*")

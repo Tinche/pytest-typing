@@ -6,6 +6,7 @@ from pytest_typing.plugin import parse_markdown
 
 
 def test_single_block() -> None:
+    """Basic Markdown block parsing works."""
     md = textwrap.dedent("""\
         # My Test
 
@@ -41,6 +42,7 @@ def test_single_block() -> None:
 
 
 def test_non_python_blocks_ignored() -> None:
+    """Non-Python blocks are ignored."""
     md = textwrap.dedent("""\
         ```toml
         [tool.ty]
@@ -59,6 +61,7 @@ def test_empty_markdown() -> None:
 
 
 def test_only_attribute() -> None:
+    """The `only` attribute is properly parsed."""
     md = textwrap.dedent("""\
         ```py only=ty,pyright
         x = 1
@@ -70,6 +73,7 @@ def test_only_attribute() -> None:
 
 
 def test_skip_attribute() -> None:
+    """The `skip` attribute is properly parsed."""
     md = textwrap.dedent("""\
         ```py skip=mypy
         x = 1
@@ -80,18 +84,8 @@ def test_skip_attribute() -> None:
     assert blocks[0].skip_checkers == {"mypy"}
 
 
-def test_combined_attributes() -> None:
-    md = textwrap.dedent("""\
-        ```py only=ty skip=mypy
-        x = 1
-        ```
-    """)
-    blocks = parse_markdown(md)
-    assert blocks[0].only_checkers == {"ty"}
-    assert blocks[0].skip_checkers == {"mypy"}
-
-
 def test_attributes_are_per_block() -> None:
+    """Attributes are scoped per-block."""
     md = textwrap.dedent("""\
         ```py only=ty
         x = 1

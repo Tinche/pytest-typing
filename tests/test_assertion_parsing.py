@@ -6,6 +6,7 @@ from pytest_typing.plugin import InvalidAssertionError, parse_assertions
 
 
 def test_error_assertion() -> None:
+    """Simple inline error assertions are parsed properly."""
     src = 'x: int = "hello" # error: [invalid-assignment]'
     assertions = parse_assertions(src)
     assert len(assertions) == 1
@@ -16,6 +17,7 @@ def test_error_assertion() -> None:
 
 
 def test_checker_specific_error() -> None:
+    """Checker-specific inline assertions are parsed properly."""
     src = 'x: int = "hello" # ty-error: [invalid-assignment]'
     assertions = parse_assertions(src)
     assert len(assertions) == 1
@@ -37,12 +39,14 @@ def test_multi_checker_specific_error() -> None:
 
 
 def test_error_with_message() -> None:
+    """Inline error assertions with messages are parsed properly."""
     src = 'x: int = "hello" # error: [invalid-assignment] not assignable'
     assertions = parse_assertions(src)
     assert assertions[0].message == "not assignable"
 
 
 def test_revealed() -> None:
+    """Simple inline reveal assertions are parsed properly."""
     src = "reveal_type(x) # revealed: int"
     assertions = parse_assertions(src)
     assert assertions[0].kind == "revealed"
@@ -52,16 +56,19 @@ def test_revealed() -> None:
 
 
 def test_complex_revealed_type() -> None:
+    """Complex inline reveal assertions are parsed properly."""
     src = "reveal_type(d) # revealed: dict[str, list[int]]"
     assertions = parse_assertions(src)
     assert assertions[0].message == "dict[str, list[int]]"
 
 
 def test_no_assertions() -> None:
+    """Lines with no assertions are handled properly."""
     assert parse_assertions("x: int = 1") == []
 
 
 def test_preceding_line_assertions() -> None:
+    """Stacked checker-specific errors are parsed properly."""
     src = textwrap.dedent("""\
         # ty-error: [invalid-assignment]
         # mypy-error: [assignment]
@@ -76,6 +83,7 @@ def test_preceding_line_assertions() -> None:
 
 
 def test_stacked_preceding_and_inline() -> None:
+    """Combining stacked and inline assertions works."""
     src = textwrap.dedent("""\
         # mypy-error: [assignment]
         x: int = "hello" # ty-error: [invalid-assignment]
@@ -91,6 +99,7 @@ def test_stacked_preceding_and_inline() -> None:
 
 
 def test_preceding_universal() -> None:
+    """Stacked non-specific error assertions work."""
     src = textwrap.dedent("""\
         # error: [some-rule]
         x: int = "hello"
@@ -102,6 +111,7 @@ def test_preceding_universal() -> None:
 
 
 def test_invalid_warning_assertion_raises() -> None:
+    """Unsupported inline assertions error out."""
     src = "old_api() # warning: [deprecated]"
     with pytest.raises(InvalidAssertionError) as exc_info:
         parse_assertions(src)
@@ -111,6 +121,7 @@ def test_invalid_warning_assertion_raises() -> None:
 
 
 def test_invalid_info_assertion_raises() -> None:
+    """Unsupported inline assertions error out."""
     src = "x = 1 # info: [some-info]"
     with pytest.raises(InvalidAssertionError) as exc_info:
         parse_assertions(src)
@@ -118,6 +129,7 @@ def test_invalid_info_assertion_raises() -> None:
 
 
 def test_invalid_checker_specific_warning_raises() -> None:
+    """Unsupported inline assertions error out."""
     src = "x = 1 # ty-warning: [some-rule]"
     with pytest.raises(InvalidAssertionError) as exc_info:
         parse_assertions(src)
@@ -126,6 +138,7 @@ def test_invalid_checker_specific_warning_raises() -> None:
 
 
 def test_invalid_warn_typo_raises() -> None:
+    """Unsupported inline assertions error out."""
     src = "x = 1 # warn: [typo]"
     with pytest.raises(InvalidAssertionError) as exc_info:
         parse_assertions(src)
@@ -133,6 +146,7 @@ def test_invalid_warn_typo_raises() -> None:
 
 
 def test_invalid_err_typo_raises() -> None:
+    """Unsupported inline assertions error out."""
     src = "x = 1 # err: [typo]"
     with pytest.raises(InvalidAssertionError) as exc_info:
         parse_assertions(src)

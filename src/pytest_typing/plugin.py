@@ -30,7 +30,7 @@ from ._base import Checker, Diagnostic, TypeChecker, checker_or_none
 from ._mypy import MypyChecker
 from ._ty import TyChecker
 
-CHECKERS: dict[Checker, TypeChecker] = {"ty": TyChecker, "mypy": MypyChecker}
+CHECKERS: Final[dict[Checker, TypeChecker]] = {"ty": TyChecker, "mypy": MypyChecker}
 
 
 class InvalidAssertionError(Exception):
@@ -77,8 +77,8 @@ class TypeAssertion:
     matched: bool = False
 
 
-# ``# error: [rule]``, ``# ty-error: [rule]``, ``# error: [rule] "msg"``
-_DIAG_ASSERTION_RE = re.compile(
+# ``# error: [rule]``, ``# ty-error: [rule]``, ``# error: [rule] msg``
+_DIAG_ASSERTION_RE: Final = re.compile(
     r"#\s*(?:(?P<checker>\w+)-)?(?P<severity>error):\s*"
     r"\[(?P<rule>[^\]]+)\]"
     r"(?:\s*(?P<message>[^#]*))?"
@@ -563,6 +563,8 @@ class MdTestFile(pytest.File):
         blocks = parse_markdown(text)
         checkers = _get_checkers(self.config)
         for idx, block in enumerate(blocks):
+            if block.only_checkers and block.skip_checkers:
+                raise pytest.UsageError("`only` and `skip` cannot be used together.")
             base_name = (
                 _normalize_test_name(block.section) if block.section else f"block-{idx}"
             )
