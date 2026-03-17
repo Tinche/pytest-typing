@@ -93,6 +93,24 @@ Or, again, on the line above.
 reveal_type(1)
 ```
 
+A section may contain multiple code blocks; this is useful for inserting longer pieces of prose in between blocks.
+All blocks within a section get concatenated.
+
+
+````markdown
+# This test contains multiple blocks
+
+```python
+a: int = 1
+```
+
+Here's some prose explaining what's going on, and then a second block:
+
+```python
+b: str = 1  # error: [invalid-assignment]
+```
+````
+
 ## Testing on multiple checkers
 
 When the `typing_checkers` field is configured with multiple checkers, tests will be run on all of them.

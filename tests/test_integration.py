@@ -260,3 +260,75 @@ def test_both_skip_and_only(pytester: pytest.Pytester) -> None:
     result = pytester.runpytest()
     assert result.ret == 2  # Interrupted
     result.stdout.fnmatch_lines("*`only` and `skip` cannot be used together*")
+
+
+def test_multiple_blocks_concatenated(pytester: pytest.Pytester) -> None:
+    """Multiple code blocks in the same section are concatenated."""
+    pytester.makefile(
+        ".md",
+        test_typing_concat=textwrap.dedent("""\
+            # Concatenation Test
+
+            ```py
+            a: int = 1
+            ```
+
+            Some prose between blocks.
+
+            ```py
+            b: int = a + 1
+            ```
+        """),
+    )
+    result = pytester.runpytest("-v")
+    result.assert_outcomes(passed=1)
+    # Should only be one test, not two
+    result.stdout.fnmatch_lines(["*concatenation_test*PASSED*"])
+
+
+def test_multiple_blocks_with_checker_specific(pytester: pytest.Pytester) -> None:
+    """Blocks with `only` are concatenated per-checker."""
+    pytester.makefile(
+        ".md",
+        test_typing_per_checker=textwrap.dedent("""\
+            # Per-Checker Test
+
+            ```py
+            a: int = 1
+            ```
+
+            ```py only=mypy
+            # This block is mypy-only
+            b: str = 1
+            ```
+
+            ```py
+            c: int = a + 1
+            ```
+        """),
+    )
+    # Run with ty only - should work (skips mypy-only block)
+    result = pytester.runpytest("-v")
+    result.assert_outcomes(passed=1)
+
+
+def test_blocks_reference_earlier_definitions(pytester: pytest.Pytester) -> None:
+    """Variables defined in earlier blocks are available in later blocks."""
+    pytester.makefile(
+        ".md",
+        test_typing_refs=textwrap.dedent("""\
+            # Cross-Block References
+
+            ```py
+            class MyClass:
+                value: int = 42
+            ```
+
+            ```py
+            obj = MyClass()
+            reveal_type(obj.value)  # revealed: int
+            ```
+        """),
+    )
+    result = pytester.runpytest("-v")
+    result.assert_outcomes(passed=1)

@@ -12,8 +12,9 @@ Assertion comments (inspired by Astral's mdtest framework):
 * ``# error: [rule-name] "optional message substring"`` — also checks
   that the diagnostic message contains the given text.
 
-Markdown headings define nested test names. Each fenced
-``\\`\\`\\`py`` block is a separate test item.
+Markdown headings define nested test names. All fenced
+``\\`\\`\\`py`` blocks within a section are concatenated into a single test item,
+per-checker.
 """
 
 import re
@@ -212,6 +213,14 @@ class MdCodeBlock:
     skip_checkers: set[str]  # empty = skip none
 
 
+@dataclass(slots=True, frozen=True)
+class MdSection:
+    """A group of code blocks within the same Markdown section."""
+
+    name: str  # section name (e.g., "Suite - Part A")
+    blocks: list[MdCodeBlock]  # all blocks in this section
+
+
 _FENCE_OPEN_RE: Final = re.compile(
     r"^```(?:py|python)"
     r"(?P<attrs>(?:\s+\w+=\S+)*)"
@@ -277,6 +286,95 @@ def parse_markdown(text: str) -> list[MdCodeBlock]:
 
         i += 1
     return blocks
+
+
+def group_blocks_by_section(blocks: list[MdCodeBlock]) -> list[MdSection]:
+    """Group consecutive code blocks by their section name."""
+    if not blocks:
+        return []
+
+    sections: list[MdSection] = []
+    current_section: str | None = None
+    current_blocks: list[MdCodeBlock] = []
+
+    for block in blocks:
+        if block.section != current_section:
+            if current_blocks:
+                sections.append(
+                    MdSection(name=current_section or "", blocks=current_blocks)
+                )
+            current_section = block.section
+            current_blocks = [block]
+        else:
+            current_blocks.append(block)
+
+    # Don't forget the last section
+    if current_blocks:
+        sections.append(MdSection(name=current_section or "", blocks=current_blocks))
+
+    return sections
+
+
+def concatenate_for_checker(
+    section: MdSection, checker: TypeChecker
+) -> MdCodeBlock | None:
+    """Concatenate blocks in a section for a specific checker.
+
+    Filters blocks by only_checkers/skip_checkers, then concatenates
+    the remaining blocks' sources. Line numbers are adjusted so that
+    assertions map back to correct positions in the concatenated source.
+
+    Returns None if no blocks remain after filtering.
+    """
+    # Filter blocks applicable to this checker
+    applicable_blocks: list[MdCodeBlock] = []
+    for block in section.blocks:
+        if block.only_checkers is not None and checker.name not in block.only_checkers:
+            continue
+        if checker.name in block.skip_checkers:
+            continue
+        applicable_blocks.append(block)
+
+    if not applicable_blocks:
+        return None
+
+    if len(applicable_blocks) == 1:
+        # Single block — return as-is
+        return applicable_blocks[0]
+
+    # Concatenate multiple blocks, tracking line offsets
+    # We'll join with newlines and adjust the source so assertions work.
+    # The key insight: we need to produce a single source where line N
+    # in the concatenated source corresponds to the original line in the
+    # markdown file. We achieve this by inserting blank lines as padding.
+
+    # Find the range of lines we need to cover
+    first_block = applicable_blocks[0]
+    last_block = applicable_blocks[-1]
+    first_line = first_block.start_line
+    # last_line is the start_line of the last block plus its line count
+    last_block_lines = last_block.source.count("\n") + 1
+    last_line = last_block.start_line + last_block_lines - 1
+
+    # Build the concatenated source with proper line positioning
+    # We create an array of lines, indexed by (line_number - first_line)
+    total_lines = last_line - first_line + 1
+    result_lines: list[str] = [""] * total_lines
+
+    for block in applicable_blocks:
+        block_lines = block.source.splitlines()
+        for i, line in enumerate(block_lines):
+            result_idx = (block.start_line - first_line) + i
+            if 0 <= result_idx < total_lines:
+                result_lines[result_idx] = line
+
+    return MdCodeBlock(
+        source="\n".join(result_lines),
+        start_line=first_line,
+        section=section.name,
+        only_checkers=None,  # Already filtered
+        skip_checkers=set(),  # Already filtered
+    )
 
 
 # ───────────────────────────────────────────────────────────────────────
@@ -562,27 +660,32 @@ class MdTestFile(pytest.File):
         text = self.path.read_text(encoding="utf-8")
         blocks = parse_markdown(text)
         checkers = _get_checkers(self.config)
-        for idx, block in enumerate(blocks):
+
+        # Validate blocks before grouping
+        for block in blocks:
             if block.only_checkers and block.skip_checkers:
                 raise pytest.UsageError("`only` and `skip` cannot be used together.")
+
+        # Group blocks by section
+        sections = group_blocks_by_section(blocks)
+
+        for idx, section in enumerate(sections):
             base_name = (
-                _normalize_test_name(block.section) if block.section else f"block-{idx}"
+                _normalize_test_name(section.name) if section.name else f"section-{idx}"
             )
             for checker in checkers:
-                if (
-                    block.only_checkers is not None
-                    and checker.name not in block.only_checkers
-                ):
+                # Concatenate blocks for this checker (filters by only/skip)
+                combined_block = concatenate_for_checker(section, checker)
+                if combined_block is None:
                     continue
-                if checker.name in block.skip_checkers:
-                    continue
+
                 # Include checker name in test name when multiple checkers are used
                 if len(checkers) > 1:
                     name = f"{base_name}[{checker.name}]"
                 else:
                     name = base_name
                 yield MdTestItem.from_parent(
-                    self, name=name, code_block=block, checker=checker
+                    self, name=name, code_block=combined_block, checker=checker
                 )
 
 
