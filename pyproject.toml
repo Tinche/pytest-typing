@@ -1,0 +1,121 @@
+[project]
+name = "pytest-typing"
+description = "Test your types by running typecheckers on them."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    {name = "Tin Tvrtkovic", email = "tinchester@gmail.com"},
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Typing :: Typed",
+    "Framework :: Pytest",
+]
+dynamic = ["version"]
+dependencies = ["pytest"]
+
+[dependency-groups]
+lint = [
+    "ruff>=0.15.5",
+    "mypy>=1.19.1",
+]
+test = [
+    "pytest>=8.4.1",
+    "immutables>=0.21",
+    "coverage>=7.9.2",
+    "ty>=0.0.21",
+    "typing-extensions>=4.15.0",
+]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project.urls]
+"Bug Tracker" = "https://github.com/Tinche/pytest-typing"
+Repository = "https://github.com/Tinche/pytest-typing"
+
+[tool.coverage.run]
+parallel = true
+source_pkgs = ["pytest_typing"]
+core = "sysmon"
+patch = ["subprocess"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+skip_empty = true
+exclude_also = [
+    "@overload",
+    "if TYPE_CHECKING:",
+]
+
+[tool.ruff]
+src = ["src", "tests"]
+
+[tool.ruff.format]
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle
+    "W",   # pycodestyle
+    "F",   # Pyflakes
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "YTT", # flake8-2020
+    "S",   # flake8-bandit
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "T10", # flake8-debugger
+    "T20", # flake8-print
+    "ISC", # flake8-implicit-str-concat
+    "RET", # flake8-return
+    "SIM", # flake8-simplify
+    "DTZ", # flake8-datetimez
+    "PGH", # pygrep-hooks
+    "PLC", # Pylint
+    "PIE", # flake8-pie
+    "RUF", # ruff
+    "I",   # isort
+]
+ignore = [
+    "E501",   # line length is handled by black
+    "RUF001", # leave my smart characters alone
+    "S101",   # assert
+    "S307",   # hands off my eval
+    "SIM300", # Yoda rocks in asserts
+    "PGH003", # leave my type: ignores alone
+    "B006",   # mutable argument defaults
+    "B905",   # zip strictness, too noisy
+    "DTZ001", # datetimes in tests
+    "DTZ006", # datetimes in tests
+]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
+[tool.hatch.version]
+source = "vcs"
+raw-options = { local_scheme = "no-local-version" }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pytest_typing"]
+
+[tool.check-wheel-contents]
+toplevel = ["pytest_typing"]
+
+[project.entry-points.pytest11]
+pytest_typing = "pytest_typing.plugin"
+
+[tool.pytest]
+typing_checkers = ["ty", "mypy"]
