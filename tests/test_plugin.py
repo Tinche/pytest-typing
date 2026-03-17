@@ -9,6 +9,7 @@ from pytest_typing.plugin import CHECKERS, Diagnostic, TypeAssertion, match_diag
 
 class TestMatchDiagnostics:
     def test_perfect_match(self) -> None:
+        """Type assertions match to diagnostics properly."""
         assertions = [
             TypeAssertion(
                 line_number=1,
@@ -32,6 +33,7 @@ class TestMatchDiagnostics:
         assert result.ok
 
     def test_unmatched_assertion(self) -> None:
+        """Unmatched assertions work properly."""
         assertions = [
             TypeAssertion(
                 line_number=5,
@@ -46,6 +48,7 @@ class TestMatchDiagnostics:
         assert len(result.unmatched_assertions) == 1
 
     def test_unexpected_diagnostic(self) -> None:
+        """Unmatched diagnostics get processed correctly."""
         diagnostics = [
             Diagnostic(
                 file="t.py",
@@ -61,6 +64,7 @@ class TestMatchDiagnostics:
         assert len(result.unexpected_diagnostics) == 1
 
     def test_revealed_type_match(self) -> None:
+        """Reveal diagnostics and assertions match."""
         assertions = [
             TypeAssertion(
                 line_number=2, kind="revealed", checker=None, rule=None, message="int"
@@ -80,6 +84,7 @@ class TestMatchDiagnostics:
         assert result.ok
 
     def test_revealed_type_mismatch(self) -> None:
+        """Error when reveal assertions and diagnostics disagree on type."""
         assertions = [
             TypeAssertion(
                 line_number=2, kind="revealed", checker=None, rule=None, message="str"
@@ -99,6 +104,7 @@ class TestMatchDiagnostics:
         assert not result.ok
 
     def test_message_substring_match(self) -> None:
+        """Error messages are matched by substring."""
         assertions = [
             TypeAssertion(
                 line_number=1,
@@ -122,6 +128,7 @@ class TestMatchDiagnostics:
         assert result.ok
 
     def test_clean_code(self) -> None:
+        """No assertions and no diagnostics works properly."""
         result = match_diagnostics([], [], CHECKERS["ty"])
         assert result.ok
 
