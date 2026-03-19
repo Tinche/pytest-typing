@@ -17,7 +17,7 @@ fix:
     uv run -p python3.14 --group lint ruff check --fix src/ tests
     uv run -p python3.14 --group lint ruff format src tests
 
-test *args="-x --ff tests":
+test *args="-x --ff tests -n auto":
     uv run {{ if python != '' { '-p ' + python } else { '' } }} --group test --group lint pytest {{args}}
 
 testall:
@@ -28,7 +28,7 @@ testall:
     just python=python3.13 test
     just python=python3.14 test
 
-cov *args="-x --ff tests":
+cov *args="-x --ff tests -n auto":
     uv run {{ if python != '' { '-p ' + python } else { '' } }} --group test --group lint coverage run -m pytest {{args}}
     {{ if covcleanup == "true" { "uv run coverage combine" } else { "" } }}
     {{ if covcleanup == "true" { "uv run coverage report" } else { "" } }}
