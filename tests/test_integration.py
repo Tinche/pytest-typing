@@ -133,6 +133,40 @@ def test_only_attribute_includes_block(pytester: pytest.Pytester) -> None:
     result.stdout.no_fnmatch_line("*for_mypy_only*")
 
 
+def test_pyright_only_attribute_includes_block(pytester: pytest.Pytester) -> None:
+    """Code blocks can target pyright specifically."""
+    pytester.makefile(
+        ".md",
+        test_typing_only=textwrap.dedent("""\
+            # Suite
+
+            ## For pyright only
+
+            ```py only=pyright
+            y = 2
+            ```
+        """),
+    )
+    result = pytester.runpytest("--collect-only", "--typing-checkers=pyright")
+    result.stdout.fnmatch_lines(["*suite-for_pyright_only*"])
+
+
+def test_pyright_specific_assertion_matches(pytester: pytest.Pytester) -> None:
+    """Pyright-specific error assertions should work end to end."""
+    pytester.makefile(
+        ".md",
+        test_typing_pyright=textwrap.dedent("""\
+            # Suite
+
+            ```py
+            x: str = 1  # pyright-error: [reportAssignmentType]
+            ```
+        """),
+    )
+    result = pytester.runpytest_inprocess("--typing-checkers=pyright")
+    assert result.ret == 0
+
+
 def test_unknown_checker_errors(pytester: pytest.Pytester) -> None:
     """We validate typing checkers."""
     pytester.makefile(".md", test_typing_x="# Test\n\n```py\nx = 1\n```\n")

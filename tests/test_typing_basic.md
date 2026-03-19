@@ -16,7 +16,7 @@ We can expect errors in snippets with in-line comments.
 Checkers usually have incompatible error codes, so each checker gets its own dedicated prefix.
 
 ```python
-a: str = 1  # ty-error: [invalid-assignment]  # mypy-error: [assignment]
+a: str = 1  # ty-error: [invalid-assignment]  # mypy-error: [assignment]  # pyright-error: [reportAssignmentType]
 ```
 
 ## Errors above
@@ -26,6 +26,7 @@ We can expect errors on lines above.
 ```python
 # ty-error: [invalid-assignment]
 # mypy-error: [assignment]
+# pyright-error: [reportAssignmentType]
 a: str = 1
 ```
 

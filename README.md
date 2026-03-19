@@ -32,7 +32,8 @@ Then, configure _pytest-typing_ with the type checker (or checkers) you want to 
 typing_checkers = ["mypy"]
 ```
 
-The currently supported type checkers are [Mypy](https://mypy.readthedocs.io/en/stable/) and [ty](https://docs.astral.sh/ty/).
+The currently supported type checkers are [Mypy](https://mypy.readthedocs.io/en/stable/), [ty](https://docs.astral.sh/ty/)
+and [Pyright](https://microsoft.github.io/pyright/).
 
 Finally, start writing Markdown files in your test directory (`tests/` by default).
 The files need to be named `test_typing_*.md` in order to be collected.
@@ -117,7 +118,7 @@ When the `typing_checkers` field is configured with multiple checkers, tests wil
 Difference checkers usually have different error codes, so different error comments should be used.
 
 ```python
-a: str = 1  # ty-error: [invalid-assignment]  # mypy-error: [assignment]
+a: str = 1  # ty-error: [invalid-assignment]  # mypy-error: [assignment]  # pyright-error: [reportAssignmentType]
 ```
 
 A code block can be configured to run only on a specific checker:
