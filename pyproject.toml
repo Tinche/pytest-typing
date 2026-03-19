@@ -32,6 +32,7 @@ test = [
     "pytest>=8.4.1",
     "immutables>=0.21",
     "coverage>=7.9.2",
+    "pyright>=1.1.407",
     "ty>=0.0.21",
     "typing-extensions>=4.15.0",
 ]
@@ -111,6 +112,9 @@ raw-options = { local_scheme = "no-local-version" }
 [tool.hatch.build.targets.wheel]
 packages = ["src/pytest_typing"]
 
+[tool.mypy]
+warn_unused_ignores = true
+
 [tool.check-wheel-contents]
 toplevel = ["pytest_typing"]
 
@@ -118,4 +122,4 @@ toplevel = ["pytest_typing"]
 pytest_typing = "pytest_typing.plugin"
 
 [tool.pytest]
-typing_checkers = ["ty", "mypy"]
+typing_checkers = ["ty", "mypy", "pyright"]

@@ -29,9 +29,14 @@ from _pytest.nodes import TerminalRepr, TracebackStyle
 
 from ._base import Checker, Diagnostic, TypeChecker, checker_or_none
 from ._mypy import MypyChecker
+from ._pyright import PyrightChecker
 from ._ty import TyChecker
 
-CHECKERS: Final[dict[Checker, TypeChecker]] = {"ty": TyChecker, "mypy": MypyChecker}
+CHECKERS: Final[dict[Checker, TypeChecker]] = {
+    "ty": TyChecker,
+    "mypy": MypyChecker,
+    "pyright": PyrightChecker,
+}
 
 
 class InvalidAssertionError(Exception):
@@ -524,7 +529,7 @@ def _get_checkers(config: pytest.Config) -> list[TypeChecker]:
             raise pytest.UsageError(
                 f"Unknown typing checker {name!r}. Available: {available}"
             )
-        checkers.append(CHECKERS[name])  # type: ignore[index]
+        checkers.append(CHECKERS[name])
     return checkers
 
 

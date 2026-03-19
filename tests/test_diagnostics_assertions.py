@@ -159,16 +159,28 @@ def test_other_checker_assertions_skipped() -> None:
     """A mypy-specific assertion should be skipped when running ty."""
     assertions = [
         TypeAssertion(
-            line_number=1,
-            kind="error",
-            checker="mypy",  # type: ignore
-            rule="assignment",
-            message=None,
+            line_number=1, kind="error", checker="mypy", rule="assignment", message=None
         )
     ]
     diagnostics: list[Diagnostic] = []
     result = match_diagnostics(assertions, diagnostics, CHECKERS["ty"])
     assert result.ok  # mypy assertion ignored, no unexpected diagnostics
+
+
+def test_pyright_specific_assertions_skipped() -> None:
+    """A pyright-specific assertion should be skipped when running ty."""
+    assertions = [
+        TypeAssertion(
+            line_number=1,
+            kind="error",
+            checker="pyright",
+            rule="reportAssignmentType",
+            message=None,
+        )
+    ]
+    diagnostics: list[Diagnostic] = []
+    result = match_diagnostics(assertions, diagnostics, CHECKERS["ty"])
+    assert result.ok
 
 
 def test_mixed_checker_assertions() -> None:
@@ -182,11 +194,7 @@ def test_mixed_checker_assertions() -> None:
             message=None,
         ),
         TypeAssertion(
-            line_number=1,
-            kind="error",
-            checker="mypy",  # type: ignore
-            rule="assignment",
-            message=None,
+            line_number=1, kind="error", checker="mypy", rule="assignment", message=None
         ),
     ]
     diagnostics = [
