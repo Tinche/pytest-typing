@@ -33,6 +33,7 @@ test = [
     "pytest-xdist>=3.8.0",
     "immutables>=0.21",
     "coverage>=7.9.2",
+    "pyrefly>=0.57.1",
     "pyright>=1.1.407",
     "ty>=0.0.21",
     "typing-extensions>=4.15.0",
@@ -123,4 +124,4 @@ toplevel = ["pytest_typing"]
 pytest_typing = "pytest_typing.plugin"
 
 [tool.pytest]
-typing_checkers = ["ty", "mypy", "pyright"]
+typing_checkers = ["ty", "mypy", "pyrefly", "pyright"]
