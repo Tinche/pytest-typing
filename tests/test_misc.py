@@ -10,6 +10,7 @@ def test_checker_or_none():
     assert checker_or_none(None) is None
     assert checker_or_none("ty") == "ty"
     assert checker_or_none("mypy") == "mypy"
+    assert checker_or_none("pyrefly") == "pyrefly"
     assert checker_or_none("pyright") == "pyright"
 
     with pytest.raises(ValueError):

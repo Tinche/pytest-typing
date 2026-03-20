@@ -6,7 +6,7 @@ from typing import Literal, Protocol
 
 import pytest
 
-Checker = Literal["ty", "mypy", "pyright"]
+Checker = Literal["ty", "mypy", "pyright", "pyrefly"]
 
 
 @dataclass(slots=True)
@@ -54,6 +54,6 @@ def checker_or_none(value: str | None) -> Checker | None:
     """Convert a string to a Checker literal, or return None."""
     if value is None:
         return None
-    if value in ("ty", "mypy", "pyright"):
+    if value in ("ty", "mypy", "pyright", "pyrefly"):
         return value  # type: ignore[return-value]
     raise ValueError(f"Invalid checker value ({value})")

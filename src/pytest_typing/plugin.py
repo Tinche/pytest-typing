@@ -29,12 +29,14 @@ from _pytest.nodes import TerminalRepr, TracebackStyle
 
 from ._base import Checker, Diagnostic, TypeChecker, checker_or_none
 from ._mypy import MypyChecker
+from ._pyrefly import PyreflyChecker
 from ._pyright import PyrightChecker
 from ._ty import TyChecker
 
 CHECKERS: Final[dict[Checker, TypeChecker]] = {
     "ty": TyChecker,
     "mypy": MypyChecker,
+    "pyrefly": PyreflyChecker,
     "pyright": PyrightChecker,
 }
 
