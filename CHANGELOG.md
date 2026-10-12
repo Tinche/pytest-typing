@@ -6,6 +6,11 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is when we need to start branches for older releases (only for emergencies).
 
+## 26.4.0 (2026-10-12)
+
+- Add Python 3.15 support.
+  ([#6](https://github.com/Tinche/pytest-typing/pull/6))
+
 ## 26.3.0 (2026-03-24)
 
 - Add Pyrefly support.
