@@ -58,6 +58,11 @@ class PyreflyChecker:
             "--summary=none",
             str(file_path),
         ]
+        preset = config.getoption("typing_pyrefly_preset")
+        if preset is None:
+            preset = config.getini("typing_pyrefly_preset")
+        if preset:
+            cmd.extend(["--preset", preset])
 
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=project_dir)  # noqa: S603
         if result.returncode not in (0, 1):

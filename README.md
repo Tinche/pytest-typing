@@ -147,6 +147,29 @@ a: int = 1
 ```
 ````
 
+## Pyrefly presets
+
+_pytest-typing_ runs Pyrefly with `--preset default` so temporary test snippets receive full type checking.
+Without an explicit preset, recent Pyrefly versions fall back to minimal checking for these unconfigured snippets and can miss assignment errors.
+
+Select a different [Pyrefly preset](https://pyrefly.org/en/docs/configuration/#preset) in your pytest configuration:
+
+```toml
+[tool.pytest]
+typing_checkers = ["pyrefly"]
+typing_pyrefly_preset = "strict"
+```
+
+Or override it for a single run:
+
+```bash
+pytest --typing-pyrefly-preset=strict
+```
+
+The command-line option takes precedence over configuration and only affects Pyrefly.
+Preset names are validated by your installed Pyrefly version.
+Use a version supporting `--preset`, or set `typing_pyrefly_preset = ""` to omit the flag and retain Pyrefly's own configuration selection.
+
 _pytest-typing_ is inspired by Astral's [mdtest framework](https://github.com/astral-sh/ruff/tree/main/crates/ty_test).
 
 ## Project Information
