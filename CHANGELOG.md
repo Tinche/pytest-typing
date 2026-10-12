@@ -8,6 +8,8 @@ The **third number** is when we need to start branches for older releases (only 
 
 ## NEXT (UNRELEASED)
 
+- Update gh-action-pypi-publish to v1.14.2.
+  ([#8](https://github.com/Tinche/pytest-typing/pull/8))
 - Update build-and-inspect-python-package to v3.0.1.
   ([#7](https://github.com/Tinche/pytest-typing/pull/7))
 
