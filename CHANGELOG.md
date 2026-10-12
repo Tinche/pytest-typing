@@ -11,6 +11,7 @@ The **third number** is when we need to start branches for older releases (only 
 - Run Pyrefly with the `default` preset so temporary snippets receive full type checking.
   Configure it with `typing_pyrefly_preset` or override it with `--typing-pyrefly-preset`.
   This requires a Pyrefly version supporting `--preset`; an empty preset omits the flag for older versions.
+  ([#9](https://github.com/Tinche/pytest-typing/pull/9))
 
 ## 26.4.1 (2026-10-13)
 
