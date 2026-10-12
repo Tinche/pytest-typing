@@ -27,6 +27,7 @@ testall:
     just python=python3.12 test
     just python=python3.13 test
     just python=python3.14 test
+    just python=python3.15 test
 
 cov *args="-x --ff tests -n auto":
     uv run {{ if python != '' { '-p ' + python } else { '' } }} --group test --group lint coverage run -m pytest {{args}}
@@ -41,6 +42,7 @@ covall:
     just python=python3.12 covcleanup=false cov
     just python=python3.13 covcleanup=false cov
     just python=python3.14 covcleanup=false cov
+    just python=python3.15 covcleanup=false cov
     uv run coverage combine
     uv run coverage report
     @rm .coverage*
