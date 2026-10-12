@@ -7,6 +7,104 @@ import pytest
 from pytest_typing._pyrefly import PyreflyChecker
 
 
+def test_default_preset(pytester: pytest.Pytester) -> None:
+    """The default preset checks assignments and reveals without configuration."""
+    pytester.makefile(
+        ".md",
+        test_typing_preset="""# Test
+
+```py
+from typing_extensions import reveal_type
+
+x: str = 1  # pyrefly-error: [bad-assignment]
+reveal_type(1)  # revealed: Literal[1]
+```
+""",
+    )
+
+    result = pytester.runpytest_inprocess("--typing-checkers=pyrefly")
+
+    result.assert_outcomes(passed=1)
+
+
+def test_empty_preset(
+    pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An empty preset leaves selection to Pyrefly, supporting older versions."""
+    pytester.maketoml("""
+    [pytest]
+    typing_checkers = ["pyrefly"]
+    typing_pyrefly_preset = ""
+    """)
+    pytester.makefile(".md", test_typing_preset="# Test\n\n```py\nx = 1\n```\n")
+    commands = []
+
+    def run(cmd, **kwargs):
+        commands.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, stdout='{"errors": []}')
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    result = pytester.runpytest_inprocess()
+
+    result.assert_outcomes(passed=1)
+    assert len(commands) == 1
+    assert "--preset" not in commands[0]
+
+
+@pytest.mark.parametrize("preset", ["default", "basic"])
+def test_configured_preset(pytester: pytest.Pytester, preset: str) -> None:
+    """The configured preset controls assignment diagnostics in snippets."""
+    pytester.maketoml(f'''
+    [pytest]
+    typing_checkers = ["pyrefly"]
+    typing_pyrefly_preset = "{preset}"
+    ''')
+    pytester.makefile(
+        ".md",
+        test_typing_preset="# Test\n\n```py\nx: str = 1  # pyrefly-error: [bad-assignment]\n```\n",
+    )
+
+    result = pytester.runpytest_inprocess()
+
+    result.assert_outcomes(
+        passed=int(preset == "default"), failed=int(preset == "basic")
+    )
+
+
+@pytest.mark.parametrize("preset", ["default", "basic"])
+def test_cli_preset_overrides_config(pytester: pytest.Pytester, preset: str) -> None:
+    """The CLI preset takes precedence over the configured preset."""
+    configured = "basic" if preset == "default" else "default"
+    pytester.maketoml(f'''
+    [pytest]
+    typing_checkers = ["pyrefly"]
+    typing_pyrefly_preset = "{configured}"
+    ''')
+    pytester.makefile(
+        ".md",
+        test_typing_preset="# Test\n\n```py\nx: str = 1  # pyrefly-error: [bad-assignment]\n```\n",
+    )
+
+    result = pytester.runpytest_inprocess(f"--typing-pyrefly-preset={preset}")
+
+    result.assert_outcomes(
+        passed=int(preset == "default"), failed=int(preset == "basic")
+    )
+
+
+def test_invalid_preset(pytester: pytest.Pytester) -> None:
+    """An unsupported preset is reported as a checker error."""
+    pytester.makefile(".md", test_typing_preset="# Test\n\n```py\nx = 1\n```\n")
+
+    result = pytester.runpytest_inprocess(
+        "--typing-checkers=pyrefly", "--typing-pyrefly-preset=nonexistent"
+    )
+
+    result.assert_outcomes(failed=1)
+    result.stdout.fnmatch_lines(["*invalid value 'nonexistent'*--preset*"])
+
+
 def test_empty_output() -> None:
     assert PyreflyChecker.parse_output("") == []
 

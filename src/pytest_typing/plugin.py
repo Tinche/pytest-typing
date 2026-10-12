@@ -499,6 +499,16 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Type checker backends to use (comma-separated, default: ty). Available: "
         + ", ".join(CHECKERS),
     )
+    group.addoption(
+        "--typing-pyrefly-preset",
+        default=None,
+        help="Pyrefly preset (overrides typing_pyrefly_preset).",
+    )
+    parser.addini(
+        "typing_pyrefly_preset",
+        "Pyrefly preset (default: default; empty disables explicit preset selection).",
+        default="default",
+    )
 
     parser.addini(
         "typing_checkers",
