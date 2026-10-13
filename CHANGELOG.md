@@ -6,7 +6,7 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is when we need to start branches for older releases (only for emergencies).
 
-## NEXT
+## 26.5.0 (2026-10-14)
 
 - Run Pyrefly with the `default` preset so temporary snippets receive full type checking.
   Configure it with `typing_pyrefly_preset` or override it with `--typing-pyrefly-preset`.
